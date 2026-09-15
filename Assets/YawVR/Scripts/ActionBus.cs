@@ -2,14 +2,11 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-
-
 /// <summary>
 /// Runs the ActionQueue functions on main thread
 /// </summary>
 public class ActionBus : MonoBehaviour
 {
-
     private static readonly Queue<Action> actionQueue = new Queue<Action>();
     private static ActionBus instance = null;
 
@@ -48,11 +45,11 @@ public class ActionBus : MonoBehaviour
         }
     }
 
-    public void Add(Action action) {
+    public void Add(Action action)
+    {
         lock (actionQueue)
         {
             actionQueue.Enqueue(action);
         }
     }
-
 }

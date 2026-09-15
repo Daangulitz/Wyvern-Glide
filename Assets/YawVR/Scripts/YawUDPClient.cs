@@ -4,24 +4,23 @@ using System.Text;
 using System.Net;
 using UnityEngine;
 
-namespace YawVR {
-
-
+namespace YawVR
+{
     public interface YawUDPClientDelegate
     {
         void DidRecieveUDPMessage(string message, IPEndPoint remoteEndPoint);
     }
 
-
-    public class YawUDPClient {
-
+    public class YawUDPClient
+    {
         private int listeningPort;
         private UdpClient udpClient;
         IPEndPoint remoteEndPoint;
         public YawUDPClientDelegate udpDelegate;
         IAsyncResult ar_ = null;
 
-        public YawUDPClient(int listeningPort) {
+        public YawUDPClient(int listeningPort)
+        {
             try
             {
                 this.listeningPort = listeningPort;
@@ -33,26 +32,32 @@ namespace YawVR {
             }
         }
 
-        public void SetRemoteEndPoint(IPAddress ipAddress, int port) {
+        public void SetRemoteEndPoint(IPAddress ipAddress, int port)
+        {
             remoteEndPoint = new IPEndPoint(ipAddress, port);
         }
 
         public void StartListening()
         {
-            try {
+            try
+            {
                 StartListeningToMessages();
-            } catch (Exception err) {
+            }
+            catch (Exception err)
+            {
                 Debug.Log("Error in starting udp listening port: " + err);
             }
         }
+
         public void StopListening()
         {
             try
             {
                 udpClient.Close();
             }
-            catch (Exception err) { 
-                Debug.Log("Error happened on closing udp listening client" + err); 
+            catch (Exception err)
+            {
+                Debug.Log("Error happened on closing udp listening client" + err);
             }
         }
 
@@ -60,13 +65,15 @@ namespace YawVR {
         {
             ar_ = udpClient.BeginReceive(Receive, new object());
         }
+
         private void Receive(IAsyncResult ar)
         {
             IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Any, this.listeningPort);
             byte[] bytes = udpClient.EndReceive(ar, ref ipEndPoint);
             string message = Encoding.ASCII.GetString(bytes);
-            
-            if (!message.Contains("YAW_CALLING")) {
+
+            if (!message.Contains("YAW_CALLING"))
+            {
                 ActionBus.Instance().Add(() =>
                 {
                     //Debug.Log(message);
@@ -79,17 +86,18 @@ namespace YawVR {
         public void SendBroadcast(int port, byte[] data)
         {
             if (udpClient == null) return;
-            try {
+            try
+            {
                 IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Parse("255.255.255.255"), port);
                 udpClient.Send(data, data.Length, ipEndPoint);
-            } catch (Exception err) {
+            }
+            catch (Exception err)
+            {
                 Debug.Log("Error in sending broadcast: " + err);
             }
-
         }
 
-
-        public void Send( byte[] data)
+        public void Send(byte[] data)
         {
             try
             {
@@ -101,5 +109,4 @@ namespace YawVR {
             }
         }
     }
-
 }

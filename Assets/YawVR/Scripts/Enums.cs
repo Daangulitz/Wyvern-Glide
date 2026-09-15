@@ -1,8 +1,10 @@
-﻿namespace YawVR {
+﻿namespace YawVR
+{
     /// <summary>
     /// SDK Connection type
     /// </summary>
-    public enum ConnectType {
+    public enum ConnectType
+    {
         CONNECT_FIRST_FOUND_DEVICE,
         DEBUG_CONNECT_TO_IP,
         NO_AUTO_CONNECT
@@ -21,12 +23,11 @@
         Success, Error
     }
 
-
     /// <summary>
     /// The controller's inner state
     /// </summary>
     public enum ControllerState
     {
         Initial, Connecting, Connected, Starting, Started, Stopping, Disconnecting
-    } 
+    }
 }

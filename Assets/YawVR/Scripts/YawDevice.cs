@@ -1,19 +1,20 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Net;
-using UnityEngine;
 
-namespace YawVR {
-
+namespace YawVR
+{
     [Serializable]
-    public enum DeviceType {
-        YAW1, YAW2
+    public enum DeviceType
+    {
+        YAW1, YAW2, YAW3
     }
+
     [Serializable]
-    public enum DeviceState {
+    public enum DeviceState
+    {
         STOPPED, STARTED, NOTRACKER, PARKING
     }
+
     /// <summary>
     /// Describes a YawDevice
     /// </summary>
@@ -42,7 +43,7 @@ namespace YawVR {
         public byte[] temps = new byte[4];
         public DeviceState State;
 
-        public YawDevice(IPAddress ipAddress,DeviceType type, int tcpPort, int udpPort, string id, string name, DeviceStatus status)
+        public YawDevice(IPAddress ipAddress, DeviceType type, int tcpPort, int udpPort, string id, string name, DeviceStatus status)
         {
             this.ipAddress = ipAddress;
             this.type = type;
@@ -59,4 +60,3 @@ namespace YawVR {
         }
     }
 }
-

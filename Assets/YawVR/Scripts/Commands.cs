@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
@@ -45,13 +44,9 @@ namespace YawVR
         public const byte GET_TEMPS = 0xE4;
         public const byte GET_STATE = 0xE5;
 
-
-
         //UDP CMDS
         public const byte UDP_LED_CMD = 0xB2;
-
     };
-
 
     public static class Commands
     {
@@ -60,11 +55,14 @@ namespace YawVR
         public static byte[] DEVICE_DISCOVERY = Encoding.ASCII.GetBytes("YAW_CALLING");
         private static ushort udpLedCounter = 0;
 
-        static void FromShort(ushort number, out byte byte1, out byte byte2) {
+        static void FromShort(ushort number, out byte byte1, out byte byte2)
+        {
             byte2 = (byte)(number >> 8);
             byte1 = (byte)(number & 255);
         }
-        public static byte[] UDP_LED_CMD(Color32[] colors) {
+
+        public static byte[] UDP_LED_CMD(Color32[] colors)
+        {
             var bytes = new byte[390];
             bytes[0] = CommandIds.UDP_LED_CMD;
             FromShort(udpLedCounter, out bytes[1], out bytes[2]);
@@ -78,25 +76,23 @@ namespace YawVR
             udpLedCounter++;
 
             return bytes;
-            
-          
         }
-        public static byte[] UDP_LED_CMD(Color32 color) {
+
+        public static byte[] UDP_LED_CMD(Color32 color)
+        {
             var bytes = new byte[390];
             bytes[0] = CommandIds.UDP_LED_CMD;
             FromShort(udpLedCounter, out bytes[1], out bytes[2]);
 
-            for (int i = 3; i < bytes.Length; i += 3) {
+            for (int i = 3; i < bytes.Length; i += 3)
+            {
                 bytes[i] = color.g;
                 bytes[i + 1] = color.r;
                 bytes[i + 2] = color.b;
             }
             udpLedCounter++;
             return bytes;
-
-
         }
-
 
         //example: "Y[000.00]P[359.99]R[180.00]"; - there is no 360.00, just 000.00
         public static byte[] MOTION_DATA(float yaw, float pitch, float roll,Buzzer buzzer,byte smartPlug)
@@ -107,12 +103,11 @@ namespace YawVR
 
             var message = orientationFormat + buzzerFormat + smartplugFormat;
 
-        //    Debug.Log(message);
+            //Debug.Log(message);
             return Encoding.ASCII.GetBytes(message);
         }
 
         //TCP
-
         public static byte[] CHECK_IN(int udpListeningPort, string gameName)
         {
             List<byte> message = new List<byte>();
@@ -124,12 +119,8 @@ namespace YawVR
 
         public static byte[] START = { CommandIds.START };
         public static byte[] CALIBRATE = { CommandIds.CALIBRATE };
-
         public static byte STOP = CommandIds.STOP;
-
-        public static byte[] EXIT = { CommandIds.EXIT };
-
-     
+        public static byte[] EXIT = { CommandIds.EXIT };     
 
         //MARK: - Helper functions
         private static byte[] AddByteToArray(byte[] bArray, byte newByte)
@@ -185,4 +176,3 @@ namespace YawVR
         }
     }
 }
-

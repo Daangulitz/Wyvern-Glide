@@ -1,13 +1,15 @@
 ﻿using UnityEngine;
-using System.Collections;
 
-public class Orientation : MonoBehaviour {
-
-    Vector3 pitchYawRoll {
-        get {
+public class Orientation : MonoBehaviour
+{
+    Vector3 pitchYawRoll
+    {
+        get
+        {
             return new Vector3(pitch, yaw, roll);
         }
-        set {
+        set
+        {
             transform.rotation = Quaternion.identity;
             Vector3 o = transform.position;
             transform.RotateAround(o, Vector3.forward, value.z);
@@ -21,8 +23,10 @@ public class Orientation : MonoBehaviour {
 	 * It is the angle between the forward vector and the horizontal
 	 * plane.
 	 */
-    public float pitch {
-        get {
+    public float pitch
+    {
+        get
+        {
             float sine = UnaryTrim(transform.forward.y);
             return -Mathf.Asin(sine) * Mathf.Rad2Deg;
         }
@@ -36,10 +40,13 @@ public class Orientation : MonoBehaviour {
 	 * if a vehicle is pointing all the way up or down,
 	 * we extract yaw from the right vector.
 	 */
-    public float yaw {
-        get {
+    public float yaw
+    {
+        get
+        {
             Vector3 vector = Ground(transform.forward);
-            if (vector.magnitude < 0.5f) {
+            if (vector.magnitude < 0.5f)
+            {
                 return EvalAltYaw();
             }
             float alpha = Vector3.Angle(vector, Vector3.forward);
@@ -47,29 +54,34 @@ public class Orientation : MonoBehaviour {
         }
         set { pitchYawRoll = new Vector3(pitch, value, roll); }
     }
+
     /**
 	 * Roll is the angle between the right vector and its ground image.
 	 */
-    public float roll {
-
-        get {
+    public float roll
+    {
+        get
+        {
             float sine = UnaryTrim(transform.right.y);
             return Mathf.Asin(sine) * Mathf.Rad2Deg;
         }
         set { pitchYawRoll = new Vector3(pitch, yaw, value); }
     }
 
-    public float attitude {
+    public float attitude
+    {
         get { return pitch; }
         set { pitch = value; }
     }
 
-    public float heading {
+    public float heading
+    {
         get { return yaw; }
         set { yaw = value; }
     }
 
-    public float bank {
+    public float bank
+    {
         get { return roll; }
         set { roll = value; }
     }
@@ -84,21 +96,23 @@ public class Orientation : MonoBehaviour {
 	 * you can still tell it's course/direction looking at
 	 * position of the wings/tyres.
 	 */
-    private float EvalAltYaw() {
+    private float EvalAltYaw()
+    {
         Vector3 vector = Ground(transform.right);
         float alpha = Vector3.Angle(vector, Vector3.right);
         return vector.z < 0 ? alpha : -alpha;
     }
 
-    private Vector3 Ground(Vector3 u) {
+    private Vector3 Ground(Vector3 u)
+    {
         u.y = 0.0f;
         return u;
     }
 
-    private float UnaryTrim(float w) {
+    private float UnaryTrim(float w)
+    {
         if (w > 1.0) return 1.0f;
         if (w < -1.0) return -1.0f;
         return w;
     }
-
 }

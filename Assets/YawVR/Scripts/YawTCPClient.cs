@@ -4,8 +4,8 @@ using System.Net;
 using System.Threading;
 using UnityEngine;
 
-namespace YawVR {
-
+namespace YawVR
+{
     public interface YawTCPClientDelegate
     {
         void DidRecieveTCPMessage(byte[] data);
@@ -29,11 +29,12 @@ namespace YawVR {
         public void Initialize(string ip, int port, Action onConnectionSuccess, Action<string> onConnectionError)
         {
             Debug.Log("TCP client started connecting");
-            if (tcpClient != null) {
-                if (tcpClient.Connected) {
+            if (tcpClient != null)
+            {
+                if (tcpClient.Connected)
+                {
                     CloseConnection();
                 }
-
             }
             this.onConnectionSuccess = onConnectionSuccess;
             this.onConnectionError = onConnectionError;
@@ -42,7 +43,8 @@ namespace YawVR {
             connectionThread.Start();
         }
 
-        private void Connection(string ip, int port) {
+        private void Connection(string ip, int port)
+        {
             try
             {
                 tcpClient = new TcpClient();
@@ -50,17 +52,19 @@ namespace YawVR {
                 tcpClient.Connect(ip, port);
                 ActionBus.Instance().Add(() =>
                 {
-
                     if (tcpClient.Connected)
                     {
                         Debug.Log("Connected to: " + ip + " " + port);
                         connected = true;
-                        if (onConnectionSuccess != null) {
+                        if (onConnectionSuccess != null)
+                        {
                             onConnectionSuccess();
                             onConnectionError = null;
                             onConnectionSuccess = null;
                         }
-                    } else {
+                    }
+                    else
+                    {
                         if (onConnectionError != null)
                         {
                             onConnectionError("Unable to connect to tcp server");
@@ -77,7 +81,8 @@ namespace YawVR {
                 Debug.Log(ex.Message);
                 ActionBus.Instance().Add(() =>
                 {
-                    if (onConnectionError != null ) {
+                    if (onConnectionError != null)
+                    {
                         onConnectionError("Unable to connect to tcp server");
                         onConnectionError = null;
                         onConnectionSuccess = null;
@@ -86,8 +91,10 @@ namespace YawVR {
             }
         }
 
-        public void StopConnecting() {
-            if (connectionThread != null && connectionThread.IsAlive) {
+        public void StopConnecting()
+        {
+            if (connectionThread != null && connectionThread.IsAlive)
+            {
                 connectionThread.Abort();
             }
             connectionThread = null;
@@ -107,13 +114,16 @@ namespace YawVR {
             var bytesAvailable = ns.EndRead(result);
             byte[] data = new byte[bytesAvailable];
             Array.Copy(buffer, data, bytesAvailable);
-            if (data.Length != 0) {
+            if (data.Length != 0)
+            {
                 ActionBus.Instance().Add(() =>
                 {
                     tcpDelegate.DidRecieveTCPMessage(data);
                 });
                 BeginRead();
-            } else {
+            }
+            else
+            {
                 ActionBus.Instance().Add(() =>
                 {
                     CloseConnection();
@@ -131,7 +141,6 @@ namespace YawVR {
         public void EndSend(IAsyncResult result)
         {
             var bytes = (byte[])result.AsyncState;
-         
         }
 
         public void CloseConnection()
@@ -147,10 +156,6 @@ namespace YawVR {
             {
                 Debug.Log("Error happened on closing tcp client" + err);
             }
-
         }
     }
 }
-
-
-
