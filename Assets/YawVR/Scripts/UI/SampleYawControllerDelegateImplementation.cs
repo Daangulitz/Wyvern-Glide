@@ -173,7 +173,7 @@ namespace YawVR
             if (ipAddress != null && udpPort != null && tcpPort != null)
             {
                 //string hostName = Dns.GetHostEntry(this.ipAddress).HostName;
-                selectedDevice = new YawDevice(ipAddress,DeviceType.YAW1, tcpPort.Value, udpPort.Value, "Manually set device", "Manually set device", DeviceStatus.Unknown); //TODO: - status
+                selectedDevice = new YawDevice(ipAddress, tcpPort.Value, udpPort.Value, "Manually set device", "Manually set device", DeviceStatus.Unknown); //TODO: - status
                 connectButton.interactable = true;
             }
             else
