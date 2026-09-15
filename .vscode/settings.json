@@ -67,5 +67,6 @@
         "*.sln": "*.csproj",
         "*.slnx": "*.csproj"
     },
-    "dotnet.defaultSolution": "Wyvern-Glide.slnx"
+    "dotnet.defaultSolution": "Wyvern-Glide.slnx",
+    "dotnet.enableWorkspaceBasedDevelopment": false
 }
