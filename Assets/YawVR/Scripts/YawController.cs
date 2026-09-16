@@ -134,7 +134,7 @@ namespace YawVR
 
     [Serializable]
     public class StateChangeEvent : UnityEvent<DeviceState> { }
-    public class YawController : MonoBehaviour, YawControllerType, YawTCPClientDelegate, YawUDPClientDelegate
+    public class YawController : MonoBehaviour, YawControllerType, IYawTCPClientDelegate, YawUDPClientDelegate
     {
         private static YawController instance;
         public static List<Action> OnConnectReceivers = new List<Action>();
@@ -342,8 +342,6 @@ namespace YawVR
                                          callbackTimeouts.tcpConnectionAttemptTimeout = null;
                                          //Set connected device to this device 
                                          device = yawDevice;
-                                         //Start listening for tcp messages
-                                         tcpCLient.BeginRead();
 
                                          //Start sending CHECK_IN command to connected tcp server
                                          //Set CHECK_IN command callbacks and start command timeout

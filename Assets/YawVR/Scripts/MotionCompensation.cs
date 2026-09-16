@@ -9,26 +9,36 @@ namespace YawVR
     {
         [SerializeField] private Transform cameraOffsetTransform;
         [SerializeField] private YawController yawController;
-        [SerializeField][Range(0f, 0.9f)] private float smoothing = 0.7f;
+
+        [Tooltip("Higher values increase smoothing responsive time.")]
+        [SerializeField][Range(1f, 30f)] private float smoothingSpeed = 10f;
+
         private Vector3 simData;
         private Vector3 offset;
 
-        public void UpdateOffset()
+        private void Awake()
         {
-            offset.y = simData.y;
+            if (yawController == null)
+            {
+                // uncomment later when yawcontroller is fixed
+                //yawController = YawController.Instance;
+            }
         }
 
-        private void Update()
+        public void UpdateOffset()
         {
-            if (YawController.Instance().State == ControllerState.Started ||
-                 YawController.Instance().State == ControllerState.Connected)
+            offset.y = -yawController.Device.ActualPosition.yaw;
+        }
+
+        private void LateUpdate()
+        {
+            if (YawController.Instance().State == ControllerState.Started || YawController.Instance().State == ControllerState.Connected)
             {
                 simData.y = -yawController.Device.ActualPosition.yaw;
 
-                if (cameraOffsetTransform != null)
-                {
-                    cameraOffsetTransform.rotation = Quaternion.Slerp(cameraOffsetTransform.rotation, Quaternion.Euler(simData - offset), 1f - smoothing);
-                }
+                Quaternion targetRotation = Quaternion.Euler(simData - offset);
+
+                cameraOffsetTransform.rotation = Quaternion.Slerp(cameraOffsetTransform.rotation, targetRotation, Time.deltaTime * smoothingSpeed);
             }
         }
     }

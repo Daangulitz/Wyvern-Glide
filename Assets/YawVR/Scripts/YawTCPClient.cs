@@ -3,10 +3,11 @@ using System.Net.Sockets;
 using System.Net;
 using System.Threading;
 using UnityEngine;
+using System.Threading.Tasks;
 
 namespace YawVR
 {
-    public interface YawTCPClientDelegate
+    public interface IYawTCPClientDelegate
     {
         void DidRecieveTCPMessage(byte[] data);
         void DidLostServerConnection();
@@ -15,147 +16,144 @@ namespace YawVR
     public class YawTCPClient
     {
         private TcpClient tcpClient;
-        public YawTCPClientDelegate tcpDelegate;
+        public IYawTCPClientDelegate tcpDelegate;
+
+        private CancellationTokenSource cts;
         private bool connected = false;
-        public bool Connected { get { return connected; } }
 
-        Action onConnectionSuccess;
-        Action<string> onConnectionError;
+        public bool Connected => tcpClient != null && tcpClient.Connected && connected;
 
-        private IAsyncResult ar;
-
-        Thread connectionThread;
-
-        public void Initialize(string ip, int port, Action onConnectionSuccess, Action<string> onConnectionError)
+        public async void Initialize(string ip, int port, Action onConnectionSuccess, Action<string> onConnectionError)
         {
-            Debug.Log("TCP client started connecting");
-            if (tcpClient != null)
-            {
-                if (tcpClient.Connected)
-                {
-                    CloseConnection();
-                }
-            }
-            this.onConnectionSuccess = onConnectionSuccess;
-            this.onConnectionError = onConnectionError;
-            connected = false;
-            connectionThread = new Thread(() => Connection(ip, port));
-            connectionThread.Start();
-        }
+            Debug.Log("[YawTCPClient] Started connecting...");
+            CloseConnection();
 
-        private void Connection(string ip, int port)
-        {
+            cts = new CancellationTokenSource();
+
             try
             {
                 tcpClient = new TcpClient();
                 IPAddress ipAddress = IPAddress.Parse(ip);
-                tcpClient.Connect(ip, port);
-                ActionBus.Instance().Add(() =>
+                
+                await tcpClient.ConnectAsync(ipAddress, port);
+
+                if (tcpClient.Connected)
                 {
-                    if (tcpClient.Connected)
-                    {
-                        Debug.Log("Connected to: " + ip + " " + port);
-                        connected = true;
-                        if (onConnectionSuccess != null)
-                        {
-                            onConnectionSuccess();
-                            onConnectionError = null;
-                            onConnectionSuccess = null;
-                        }
-                    }
-                    else
-                    {
-                        if (onConnectionError != null)
-                        {
-                            onConnectionError("Unable to connect to tcp server");
-                            onConnectionError = null;
-                            onConnectionSuccess = null;
-                        }
-                    }
-                    onConnectionError = null;
-                    onConnectionSuccess = null;
-                });
+                    connected = true;
+                    Debug.Log($"[YawTCPClient] Connected to: {ip}:{port}");
+
+                    ActionBus.Instance.Add(() => onConnectionSuccess?.Invoke());
+
+                    _ = ReadLoopAsync(cts.Token);
+                }
+                else
+                {
+                    HandleConnectionError("Unable to connect to TCP server.", onConnectionError);
+                }
             }
             catch (Exception ex)
             {
-                Debug.Log(ex.Message);
-                ActionBus.Instance().Add(() =>
-                {
-                    if (onConnectionError != null)
-                    {
-                        onConnectionError("Unable to connect to tcp server");
-                        onConnectionError = null;
-                        onConnectionSuccess = null;
-                    }
-                });
+                HandleConnectionError($"Connection failed: {ex.Message}", onConnectionError);
             }
         }
 
         public void StopConnecting()
         {
-            if (connectionThread != null && connectionThread.IsAlive)
-            {
-                connectionThread.Abort();
-            }
-            connectionThread = null;
+            cts?.Cancel();
+            CloseConnection();
         }
 
-        public void BeginRead()
+        private async Task ReadLoopAsync(CancellationToken token)
         {
             var buffer = new byte[4096];
-            var ns = tcpClient.GetStream();
-            ns.BeginRead(buffer, 0, buffer.Length, EndRead, buffer);
-        }
 
-        public void EndRead(IAsyncResult result)
-        {
-            var buffer = (byte[])result.AsyncState;
-            var ns = tcpClient.GetStream();
-            var bytesAvailable = ns.EndRead(result);
-            byte[] data = new byte[bytesAvailable];
-            Array.Copy(buffer, data, bytesAvailable);
-            if (data.Length != 0)
+            try
             {
-                ActionBus.Instance().Add(() =>
+                NetworkStream ns = tcpClient.GetStream();
+
+                while (!token.IsCancellationRequested && tcpClient.Connected)
                 {
-                    tcpDelegate.DidRecieveTCPMessage(data);
-                });
-                BeginRead();
+                    int bytesRead = await ns.ReadAsync(buffer, 0, buffer.Length, token);
+                    if (bytesRead > 0)
+                    {
+                        byte[] data = new byte[bytesRead];
+                        Array.Copy(buffer, data, bytesRead);
+
+                        ActionBus.Instance.Add(() =>
+                        {
+                            tcpDelegate?.DidRecieveTCPMessage(data);
+                        });
+                    }
+                    else break;
+                }
             }
-            else
+            catch (Exception ex)
             {
-                ActionBus.Instance().Add(() =>
+                Debug.LogWarning($"[YawTCPClient] Read error: {ex.Message}");
+            }
+            finally
+            {
+                if (!connected)
                 {
                     CloseConnection();
-                    tcpDelegate.DidLostServerConnection();
-                });
+                    ActionBus.Instance.Add(() =>
+                    {
+                        tcpDelegate?.DidLostServerConnection();
+                    });
+                }
             }
         }
 
-        public void BeginSend(byte[] data)
+        public async void BeginSend(byte[] data)
         {
-            var ns = tcpClient.GetStream();
-            ns.BeginWrite(data, 0, data.Length, EndSend, data);
-        }
+            if (tcpClient == null || !tcpClient.Connected || data == null || data.Length == 0) return;
 
-        public void EndSend(IAsyncResult result)
-        {
-            var bytes = (byte[])result.AsyncState;
+            try
+            {
+                NetworkStream ns = tcpClient.GetStream();
+                await ns.WriteAsync(data, 0, data.Length);
+            }
+            catch (Exception err)
+            {
+                Debug.LogError($"[YawTCPClient] Error sending data: {err.Message}");
+            }
         }
 
         public void CloseConnection()
         {
             connected = false;
-            if (tcpClient == null || !tcpClient.Connected) return;
-            try
+
+            if (cts != null)
             {
-                tcpClient.GetStream().Close();
-                tcpClient.Close();
+                cts.Cancel();
+                cts.Dispose();
+                cts = null;
             }
-            catch (Exception err)
+
+            if (tcpClient != null)
             {
-                Debug.Log("Error happened on closing tcp client" + err);
+                try
+                {
+                    tcpClient.Close();
+                }
+                catch (Exception err)
+                {
+                    Debug.Log($"[YawTCPClient] Error closing client: {err.Message}");
+                }
+                finally
+                {
+                    tcpClient = null;
+                }
             }
+        }
+
+        private void HandleConnectionError(string message, Action<string> onErrorCallback)
+        {
+            CloseConnection();
+            ActionBus.Instance.Add(() =>
+            {
+                onErrorCallback?.Invoke(message);
+            });
         }
     }
 }

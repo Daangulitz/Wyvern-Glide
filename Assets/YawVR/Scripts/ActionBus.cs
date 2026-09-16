@@ -1,55 +1,72 @@
 ﻿using System;
 using UnityEngine;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 
 /// <summary>
-/// Runs the ActionQueue functions on main thread
+/// Thread-safe dispatcher that runs background actions on the Unity main thread.
 /// </summary>
 public class ActionBus : MonoBehaviour
 {
-    private static readonly Queue<Action> actionQueue = new Queue<Action>();
-    private static ActionBus instance = null;
+    private static readonly ConcurrentQueue<Action> actionQueue = new();
+    private static ActionBus instance;
 
-    public static ActionBus Instance()
+    public static ActionBus Instance
     {
-        if (instance == null)
+        get
         {
-            throw new Exception("ActionBus' parent gameObject needs to be on scene, please add it to your scene.");
-        }
-        return instance;
-    }
-
-    void Awake()
-    {
-        if (instance == null)
-        {
-            instance = this;
-            //DontDestroyOnLoad(this.gameObject); - commented out when adding to an existing don't destroy on load gameObject
-        }
-    }
-
-    void OnDestroy()
-    {
-        instance = null;
-    }
-
-    public void Update()
-    {
-        lock (actionQueue)
-        {
-            while (actionQueue.Count > 0)
+            if (instance == null)
             {
-                Action action = actionQueue.Dequeue();
-                action();
+                throw new Exception("[ActionBus] Instance is null. Ensure ActionBus is present in the scene.");
             }
+            return instance;
+        }
+    }
+
+    private void Awake()
+    {
+        if (instance != null && instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        instance = this;
+        //DontDestroyOnLoad(this.gameObject); // Uncomment if this needs to persist across scenes
+    }
+
+    private void OnDestroy()
+    {
+        if (instance == this)
+        {
+            instance = null;
+        }
+    }
+
+    private void Update()
+    {
+        if (actionQueue.IsEmpty) return;
+
+        int actionsToRun = actionQueue.Count;
+        int executed = 0;
+
+        while (executed < actionsToRun && actionQueue.TryDequeue(out Action action))
+        {
+            try
+            {
+                action?.Invoke();
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[ActionBus] Error executing action: {e}");
+            }
+            
+            executed++;
         }
     }
 
     public void Add(Action action)
     {
-        lock (actionQueue)
-        {
-            actionQueue.Enqueue(action);
-        }
+        if (action == null) return;
+        actionQueue.Enqueue(action);
     }
 }

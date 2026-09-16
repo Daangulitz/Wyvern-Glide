@@ -74,7 +74,7 @@ namespace YawVR
 
             if (!message.Contains("YAW_CALLING"))
             {
-                ActionBus.Instance().Add(() =>
+                ActionBus.Instance.Add(() =>
                 {
                     //Debug.Log(message);
                     udpDelegate.DidRecieveUDPMessage(message, ipEndPoint);

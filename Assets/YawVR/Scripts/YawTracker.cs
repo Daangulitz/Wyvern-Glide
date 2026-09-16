@@ -3,7 +3,7 @@
 namespace YawVR
 {
     /// <summary>
-    /// YawTracker class. The gameobject's orientation is sent to the simulator
+    /// Modifies and stores orientation data before sending to the simulator.
     /// </summary>
     public class YawTracker : MonoBehaviour
     {
@@ -11,7 +11,11 @@ namespace YawVR
 
         private void Awake()
         {
-            yawController = transform.parent.GetComponent<YawController>();
+            yawController = GetComponentInParent<YawController>();
+            if (yawController == null)
+            {
+                //yawController = YawController.Instance;
+            }
         }
 
         /// <summary>
@@ -19,6 +23,8 @@ namespace YawVR
         /// </summary>
         public void SetRotation(Vector3 rot)
         {
+            if (yawController == null) return;
+
             rot = SignedVector(rot);
             rot = ApplyMultipliers(rot);
             rot = ApplyLimits(rot);
@@ -28,31 +34,25 @@ namespace YawVR
 
         private Vector3 ApplyMultipliers(Vector3 rot)
         {
-            rot.x = rot.x * yawController.RotationMultiplier.x;
-            rot.y = rot.y * yawController.RotationMultiplier.y;
-            rot.z = rot.z * yawController.RotationMultiplier.z;
-            return rot;
+            return Vector3.Scale(rot, yawController.RotationMultiplier);
         }
 
         private Vector3 ApplyLimits(Vector3 rot)
         {
-            float pitchLimit = yawController.Limits.pitch;
-            if (pitchLimit != -1) rot.x = Mathf.Clamp(rot.x, -pitchLimit, pitchLimit);
+            Limits limits = yawController.Limits;
 
-            float yawLimit = yawController.Limits.yaw;
-            if (yawLimit != -1) rot.y = Mathf.Clamp(rot.y, -yawLimit, yawLimit);
+            if (limits.pitch != -1) rot.x = Mathf.Clamp(rot.x, -limits.pitch, limits.pitch);
+            if (limits.yaw != -1)   rot.y = Mathf.Clamp(rot.y, -limits.yaw, limits.yaw);
+            if (limits.roll != -1)  rot.z = Mathf.Clamp(rot.z, -limits.roll, limits.roll);
 
-            float rollLimit = yawController.Limits.roll;
-            if (rollLimit != -1) rot.z = Mathf.Clamp(rot.z, -rollLimit, rollLimit);
             return rot;
         }
 
         private Vector3 SignedVector(Vector3 v)
         {
-            if (v.x >= 180) v.x -= 360;
-            if (v.y >= 180) v.y -= 360;
-            if (v.z >= 180) v.z -= 360;
-
+            v.x = Mathf.DeltaAngle(0, v.x);
+            v.y = Mathf.DeltaAngle(0, v.y);
+            v.z = Mathf.DeltaAngle(0, v.z);
             return v;
         }
     }

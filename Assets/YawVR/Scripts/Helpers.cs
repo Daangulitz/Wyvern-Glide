@@ -13,18 +13,6 @@ namespace YawVR
             return result;
         }
 
-        public static float decodeFloat(byte[] msg, int offset)
-        {
-            byte[] array = new byte[4];
-
-            for (int i = 0; i < 3; i++)
-            {
-                array[i] = msg[offset + i];
-            }
-
-            return floatConversion(array);
-        }
-
         public static void FromShort(ushort number, out byte byte1, out byte byte2)
         {
             byte2 = (byte)(number >> 8);
@@ -55,20 +43,6 @@ namespace YawVR
                     return true;
             }
             return false;
-        }
-
-        public static float ReadSingle(byte[] data, int offset, bool littleEndian)
-        {
-            if (BitConverter.IsLittleEndian != littleEndian)
-            {   // other-endian; reverse this portion of the data (4 bytes)
-                byte tmp = data[offset];
-                data[offset] = data[offset + 3];
-                data[offset + 3] = tmp;
-                tmp = data[offset + 1];
-                data[offset + 1] = data[offset + 2];
-                data[offset + 2] = tmp;
-            }
-            return BitConverter.ToSingle(data, offset);
         }
 
         public static UInt32 ReadInt(byte[] data, int offset, bool littleEndian)
