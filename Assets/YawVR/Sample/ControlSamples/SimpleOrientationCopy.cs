@@ -13,7 +13,7 @@ public class SimpleOrientationCopy : MonoBehaviour
     YawController yawController; // reference to YawController
 
     private void Start() {
-        yawController = YawController.Instance();
+        yawController = YawController.Instance;
     }
     private void FixedUpdate() {
         yawController.TrackerObject.SetRotation(transform.localEulerAngles);

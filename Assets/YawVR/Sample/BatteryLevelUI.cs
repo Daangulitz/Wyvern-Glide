@@ -21,7 +21,7 @@ public class BatteryLevelUI : MonoBehaviour
     }
     private void Start()
     {
-        yawController = YawController.Instance();
+        yawController = YawController.Instance;
 
         StartCoroutine(UpdateUI());
     }

@@ -39,7 +39,7 @@ namespace YawVR {
             while (true) {
               
                 Color toSet = Color.Lerp(colors[index], colors[nextIndex], t / time);
-                YawController.Instance().SendLED(toSet);
+                YawController.Instance.SendLED(toSet);
                 t += Time.deltaTime;
                 if (t >= time) {               
                     t = 0;

@@ -35,7 +35,7 @@ namespace YawVR {
 
                 b = !b;
 
-                YawController.Instance().SendLED(toSet);
+                YawController.Instance.SendLED(toSet);
                 yield return delay;
             }
         }

@@ -6,10 +6,10 @@ namespace YawVR {
         [SerializeField]
         private Color32 color;
         public void SetSimpleColor(Color c) {
-            YawController.Instance().SendLED(c);
+            YawController.Instance.SendLED(c);
         }
         public void SetSimpleColor() {
-            YawController.Instance().SendLED(color);
+            YawController.Instance.SendLED(color);
         }
     }
 }

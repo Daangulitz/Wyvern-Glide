@@ -40,7 +40,7 @@ namespace YawVR {
                 }
                 counter++;
 
-                YawController.Instance().SendLED(colors);
+                YawController.Instance.SendLED(colors);
                 yield return delay;
             }
         }

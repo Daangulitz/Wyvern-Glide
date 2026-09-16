@@ -23,7 +23,7 @@ namespace YawVR {
         }
 
         private Buzzer GetBuzzer() {
-            return YawController.Instance().Buzzer;
+            return YawController.Instance.Buzzer;
         }
     }
 }

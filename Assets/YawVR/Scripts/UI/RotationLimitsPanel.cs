@@ -23,7 +23,7 @@ namespace YawVR {
 
         private YawController controller;
         private void Start() {
-            controller = YawController.Instance();
+            controller = YawController.Instance;
         }
 
         public void OnChange() {
