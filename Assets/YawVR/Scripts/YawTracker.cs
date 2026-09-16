@@ -12,10 +12,7 @@ namespace YawVR
         private void Awake()
         {
             yawController = GetComponentInParent<YawController>();
-            if (yawController == null)
-            {
-                //yawController = YawController.Instance;
-            }
+            if (yawController == null) yawController = YawController.Instance;
         }
 
         /// <summary>
