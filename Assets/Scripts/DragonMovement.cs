@@ -6,10 +6,10 @@ public class SimpleFlight : MonoBehaviour
 {
     public Rigidbody rb;
 
-    [Header("VR Controller")]
-    public Transform controllerTransform;   // assign the tracked controller (right hand)
+    [Header("VR Controller (Input System)")]
+    public InputActionReference controllerRotationAction; // bind to <XRController>{RightHand}/deviceRotation
     public bool calibrateOnStart = true;
-    public InputActionReference calibrateAction; // bind to grip/trigger/button in the Input Actions asset
+    public InputActionReference calibrateAction; // bind to grip/primaryButton press
 
     [Header("Speed")]
     public float currentSpeed = 30f;
@@ -26,7 +26,13 @@ public class SimpleFlight : MonoBehaviour
     public float levelThresholdDeg = 5f;
     [Range(10f, 90f)] public float maxTiltAngle = 45f;
 
+    [Header("Debug")]
+    public GameObject debugDragon; // active = cleared to move, inactive = still blocked
+
     private Quaternion _calibrationRotation = Quaternion.identity;
+    private Quaternion _currentControllerRotation = Quaternion.identity;
+    private bool _hasCalibrated = false;
+    private bool _pendingCalibration = false;
 
     void Reset()
     {
@@ -35,6 +41,9 @@ public class SimpleFlight : MonoBehaviour
 
     void OnEnable()
     {
+        if (controllerRotationAction != null)
+            controllerRotationAction.action.Enable();
+
         if (calibrateAction != null)
         {
             calibrateAction.action.Enable();
@@ -44,6 +53,9 @@ public class SimpleFlight : MonoBehaviour
 
     void OnDisable()
     {
+        if (controllerRotationAction != null)
+            controllerRotationAction.action.Disable();
+
         if (calibrateAction != null)
         {
             calibrateAction.action.performed -= OnCalibratePerformed;
@@ -53,57 +65,86 @@ public class SimpleFlight : MonoBehaviour
 
     void OnCalibratePerformed(InputAction.CallbackContext ctx)
     {
-        Calibrate();
+        if (IsValidRotation(_currentControllerRotation))
+            Calibrate();
     }
 
     void Start()
     {
-        if (calibrateOnStart) Calibrate();
+        if (calibrateOnStart)
+            _pendingCalibration = true; // wait for a valid pose instead of calibrating blindly
     }
 
     public void Calibrate()
     {
-        if (controllerTransform != null)
-            _calibrationRotation = controllerTransform.rotation;
+        _calibrationRotation = _currentControllerRotation;
+        _hasCalibrated = true;
+    }
+
+    // A genuine unit quaternion has (x²+y²+z²+w²) ≈ 1. Garbage/uninitialized tracking data won't.
+    bool IsValidRotation(Quaternion q)
+    {
+        float sqrMag = q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w;
+        return sqrMag > 0.9f && sqrMag < 1.1f;
     }
 
     void FixedUpdate()
     {
-        if (rb == null || controllerTransform == null) return;
+        if (rb == null || controllerRotationAction == null) return;
 
-        Quaternion relative = Quaternion.Inverse(_calibrationRotation) * controllerTransform.rotation;
+        _currentControllerRotation = controllerRotationAction.action.ReadValue<Quaternion>();
 
-        Vector3 relativeEuler = relative.eulerAngles;
-        float pitchDegRaw = NormalizeAngle(relativeEuler.x);
-        float rollDegRaw = NormalizeAngle(relativeEuler.z);
+        bool poseIsValid = IsValidRotation(_currentControllerRotation);
 
-        float pitchInput = Mathf.Clamp(-pitchDegRaw / maxTiltAngle, -1f, 1f);
-        float rollInput = Mathf.Clamp(-rollDegRaw / maxTiltAngle, -1f, 1f);
+        if (_pendingCalibration && poseIsValid)
+        {
+            Calibrate();
+            _pendingCalibration = false;
+        }
+
+        // debug: dragon active only once we're actually cleared to move
+        if (debugDragon != null)
+            debugDragon.SetActive(_hasCalibrated && poseIsValid);
+
+        // don't move at all until we've calibrated against a real, valid pose
+        if (!_hasCalibrated || !poseIsValid)
+        {
+            rb.linearVelocity = Vector3.zero;
+            return;
+        }
+
+        Quaternion relative = Quaternion.Inverse(_calibrationRotation) * _currentControllerRotation;
+
+        // Where is the controller's "tip" pointing, relative to neutral?
+        // Direct joystick-style read: pulling the tip up = climb, tilting sideways = roll.
+        Vector3 stickDir = relative * Vector3.forward;
+
+        float maxTiltRad = maxTiltAngle * Mathf.Deg2Rad;
+        float pitchInput = Mathf.Clamp(stickDir.y / Mathf.Sin(maxTiltRad), -1f, 1f);
+        float rollInput = Mathf.Clamp(stickDir.x / Mathf.Sin(maxTiltRad), -1f, 1f);
 
         transform.Rotate(pitchInput * pitchSpeed * Time.fixedDeltaTime,
                          rollInput * yawFromRoll * Time.fixedDeltaTime,
                          -rollInput * rollSpeed * Time.fixedDeltaTime,
                          Space.Self);
 
+        // compute pitch angle in degrees: positive = nose up, negative = nose down
         float pitchRad = Mathf.Asin(Mathf.Clamp(transform.forward.y, -1f, 1f));
         float pitchDeg = pitchRad * Mathf.Rad2Deg;
+
+        // pitchFactor: positive when diving (pitchDeg < 0), negative when climbing (pitchDeg > 0)
         float pitchFactor = -pitchDeg / 90f;
 
         currentSpeed += pitchFactor * pitchInfluence * speedChangeRate * Time.fixedDeltaTime;
 
         if (Mathf.Abs(pitchDeg) <= levelThresholdDeg)
+        {
             currentSpeed -= passiveDecay * Time.fixedDeltaTime;
+        }
 
         currentSpeed = Mathf.Clamp(currentSpeed, minSpeed, maxSpeed);
 
-        float verticalVel = Vector3.Dot(rb.linearVelocity, Vector3.up);
-        rb.linearVelocity = transform.forward * currentSpeed + Vector3.up * verticalVel;
-    }
-
-    private float NormalizeAngle(float angle)
-    {
-        angle %= 360f;
-        if (angle > 180f) angle -= 360f;
-        return angle;
+        // no gravity fighting: pure forward-vector flight, level flight stays level
+        rb.linearVelocity = transform.forward * currentSpeed;
     }
 }

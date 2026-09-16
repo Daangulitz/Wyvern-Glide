@@ -291,13 +291,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 296500893}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0.000000032015443, z: -0.00000004470348, w: 1}
-  m_LocalPosition: {x: 0, y: -0.3435793, z: -0.3761673}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalRotation: {x: 0.50418717, y: -0.5041869, z: -0.49577782, w: 0.49577752}
+  m_LocalPosition: {x: 0.00005, y: 0, z: -0.00336}
+  m_LocalScale: {x: 0.009999998, y: 0.01, z: 0.01}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 231743577}
-  m_Father: {fileID: 5843683911810709526}
+  m_Father: {fileID: 986706561}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &296500895
 MonoBehaviour:
@@ -1152,9 +1152,9 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1054827964 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8972431223885250338, guid: 18267e2d46e1c54aaaec2f53d93afb06, type: 3}
+--- !u!4 &986706561 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2086622895899186008, guid: 18267e2d46e1c54aaaec2f53d93afb06, type: 3}
   m_PrefabInstance: {fileID: 5843683911810709517}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &1402154745
@@ -1676,14 +1676,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Dragon
       objectReference: {fileID: 0}
-    - target: {fileID: 8972431223885250338, guid: 18267e2d46e1c54aaaec2f53d93afb06, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 6023697553181998004, guid: 18267e2d46e1c54aaaec2f53d93afb06, type: 3}
+    - targetCorrespondingSourceObject: {fileID: 2086622895899186008, guid: 18267e2d46e1c54aaaec2f53d93afb06, type: 3}
       insertIndex: -1
       addedObject: {fileID: 296500894}
     m_AddedComponents:
@@ -1863,9 +1859,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SimpleFlight
   rb: {fileID: 5843683911810709524}
-  debugDragon: {fileID: 1054827964}
   controllerRotationAction: {fileID: 5677774301284416954, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  calibrateOnStart: 1
+  calibrateOnStart: 0
   calibrateAction: {fileID: 1120369429361536294, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   currentSpeed: 10
   minSpeed: 5
@@ -1878,11 +1873,6 @@ MonoBehaviour:
   yawFromRoll: 20
   levelThresholdDeg: 5
   maxTiltAngle: 45
---- !u!4 &5843683911810709526 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 6023697553181998004, guid: 18267e2d46e1c54aaaec2f53d93afb06, type: 3}
-  m_PrefabInstance: {fileID: 5843683911810709517}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
