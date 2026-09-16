@@ -18,11 +18,7 @@ namespace YawVR
 
         private void Awake()
         {
-            if (yawController == null)
-            {
-                // uncomment later when yawcontroller is fixed
-                //yawController = YawController.Instance;
-            }
+            if (yawController == null) yawController = YawController.Instance;
         }
 
         public void UpdateOffset()
@@ -32,7 +28,7 @@ namespace YawVR
 
         private void LateUpdate()
         {
-            if (YawController.Instance().State == ControllerState.Started || YawController.Instance().State == ControllerState.Connected)
+            if (YawController.Instance.State == ControllerState.Started || YawController.Instance.State == ControllerState.Connected)
             {
                 simData.y = -yawController.Device.ActualPosition.yaw;
 

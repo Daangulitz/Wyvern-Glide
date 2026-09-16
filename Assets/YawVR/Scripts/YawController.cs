@@ -47,14 +47,14 @@ namespace YawVR
 
         public void SetBuzzerAmps(int right, int center, int left)
         {
-            this.right_amp = right;
-            this.center_amp = center;
-            this.left_amp = left;
+            right_amp = right;
+            center_amp = center;
+            left_amp = left;
         }
 
         public void SetHz(int buzzerHz)
         {
-            this.hz = buzzerHz;
+            hz = buzzerHz;
         }
 
         public void SetOn(bool b)
@@ -83,7 +83,7 @@ namespace YawVR
     /// <summary>
     /// The script, that needs to receive notifications, is need to inherited from YawControllerDelegate
     /// </summary>
-    public interface YawControllerDelegate
+    public interface IYawControllerDelegate
     {
         void ControllerStateChanged(ControllerState state);
 
@@ -98,15 +98,15 @@ namespace YawVR
         void DidDisconnectFrom(YawDevice device);
 
         void DeviceStoppedFromApp(); // will be called when device stopped from app
-        void DeviceStartedFromApp();// will be called when device started from app
+        void DeviceStartedFromApp(); // will be called when device started from app
     }
 
-    public interface YawControllerType
+    public interface IYawControllerType
     {
         //Properties 
         ControllerState State { get; }
         YawDevice Device { get; }
-        YawControllerDelegate ControllerDelegate { get; set; }
+        IYawControllerDelegate ControllerDelegate { get; set; }
 
         //Motion related properties
         Vector3 RotationMultiplier { get; }
@@ -134,110 +134,94 @@ namespace YawVR
 
     [Serializable]
     public class StateChangeEvent : UnityEvent<DeviceState> { }
-    public class YawController : MonoBehaviour, YawControllerType, IYawTCPClientDelegate, YawUDPClientDelegate
+
+    public class YawController : MonoBehaviour, IYawControllerType, IYawTCPClientDelegate, IYawUDPClientDelegate
     {
         private static YawController instance;
-        public static List<Action> OnConnectReceivers = new List<Action>();
+        public static List<Action> OnConnectReceivers = new();
+
         private YawTCPClient tcpCLient;
         private YawUDPClient udpClient;
-        [SerializeField]
-        private YawDevice device = null;
+
+        [SerializeField] private YawDevice device = null;
         private ControllerState state = ControllerState.Initial;
         private int discoveryPort = 0;
-        private CallBacks callBacks = new CallBacks();
-        private CallbackTimeouts callbackTimeouts = new CallbackTimeouts();
+
+        private CallBacks callBacks = new();
+        private CallbackTimeouts callbackTimeouts = new();
+
         private Orientation orientation;
         private YawTracker yawTracker;
 
         #region PROPERTIES
+        public static YawController Instance
+        {
+            get
+            {
+                if (instance == null) throw new Exception("[YawController] Please drag YawController prefab into your scene.");
+                return instance;
+            }
+        }
 
-        public YawTracker TrackerObject { get { return yawTracker; } }
-        public ControllerState State { get { return state; } }
-        public YawDevice Device { get { return device; } }
-        public YawControllerDelegate ControllerDelegate { get; set; }
-
-        public Vector3 RotationMultiplier { get { return rotationMultiplier; } }
-
-        public Limits Limits { get { return gameLimits; } }
-
-        public Buzzer Buzzer { get { return buzzer; } }
+        public YawTracker TrackerObject => yawTracker;
+        public ControllerState State => state;
+        public YawDevice Device => device;
+        public IYawControllerDelegate ControllerDelegate { get; set; }
+        public Vector3 RotationMultiplier => rotationMultiplier;
+        public Limits Limits => gameLimits;
+        public Buzzer Buzzer => buzzer;
         #endregion
 
-        [SerializeField]
-        Transform referenceTransform; // we ill copy this objects rotation, and send it to the sim
-        [SerializeField]
-        string gameName; //name of the game
-
-        [SerializeField]
-        private ConnectType connectType; //connect type, for debug purposes
-        [SerializeField]
-        private string debug_ipAddress; //ip to connect in debug mode
-
-        [SerializeField]
-        int udpClientPort;
+        [SerializeField] private Transform referenceTransform; // we will copy this objects rotation, and send it to the sim
+        [SerializeField] private string gameName; // name of the game
+        [SerializeField] private ConnectType connectType; // connect type, for debug purposes
+        [SerializeField] private string debug_ipAddress; // ip to connect in debug mode
+        [SerializeField] private int udpClientPort;
 
         private OVector referenceRotation; // the rotation of the YAWTracker
 
-        [SerializeField]
-        private Vector3 rotationMultiplier = new Vector3(1, 1, 1); // multiplier for YAWTracker
-        [SerializeField]
-        private Limits gameLimits;
-        [SerializeField]
-        private Buzzer buzzer;
-        [SerializeField]
-        private byte smartPlug;
+        [SerializeField] private Vector3 rotationMultiplier = new(1, 1, 1); // multiplier for YAWTracker
+        [SerializeField] private Limits gameLimits;
+        [SerializeField] private Buzzer buzzer;
+        [SerializeField] private byte smartPlug;
 
         [Header("Camera Cancellation")]
-        [SerializeField]
-        private MotionCompensation cancellation;
+        [SerializeField] private MotionCompensation cancellation;
 
         [Header("Events")]
-        [SerializeField]
-        private UnityEvent onConnected;
-        [SerializeField]
-        private UnityEvent onDisconnected;
-        [SerializeField]
-        private StateChangeEvent onStateChanged;
+        [SerializeField] private UnityEvent onConnected;
+        [SerializeField] private UnityEvent onDisconnected;
+        [SerializeField] private StateChangeEvent onStateChanged;
 
-        public static YawController Instance()
+        private void Awake()
         {
-            if (instance == null)
-            {
-                throw new Exception("Please drag YawController prefab into your scene");
-            }
-            return instance;
-        }
-
-        //MARK: - Lifecycle methods
-        void Awake()
-        {
-            //Creating singleton instance
             if (instance == null)
             {
                 instance = this;
+                DontDestroyOnLoad(gameObject);
             }
             else if (instance != this)
             {
                 DestroyImmediate(gameObject);
+                return;
             }
 
             orientation = GetComponentInChildren<Orientation>();
-            // Debug.Log(orientation);
             yawTracker = GetComponentInChildren<YawTracker>();
 
-            //Make gameObject persitent through multiple scenes
-            DontDestroyOnLoad(gameObject);
+            tcpCLient = new YawTCPClient
+            {
+                tcpDelegate = this
+            };
 
-            //Initialize tcp client
-            tcpCLient = new YawTCPClient();
-            tcpCLient.tcpDelegate = this;
+            udpClient = new YawUDPClient(udpClientPort)
+            {
+                udpDelegate = this
+            };
 
-            //Initialize udp client and start listening on given listening port
-            udpClient = new YawUDPClient(udpClientPort);
-            udpClient.udpDelegate = this;
             udpClient.StartListening();
 
-            Debug.Log("YawController initialized");
+            Debug.Log("[YawController] Initialized");
         }
 
         private void Start()
@@ -246,354 +230,241 @@ namespace YawVR
 
             if (connectType == ConnectType.DEBUG_CONNECT_TO_IP)
             {
-                ConnectToDevice(new YawDevice(IPAddress.Parse(debug_ipAddress), 50020, 50010, "001", "DEBUG", DeviceStatus.Available),
-                    null, null);
+                ConnectToDevice(new YawDevice(IPAddress.Parse(debug_ipAddress), 50020, 50010, "001", "DEBUG", DeviceStatus.Available), null, null);
             }
         }
 
-        void FixedUpdate()
+        private void FixedUpdate()
         {
             referenceRotation.pitch = orientation.pitch;
             referenceRotation.yaw = orientation.yaw;
             referenceRotation.roll = orientation.roll;
-            //If we are in game, sending rotation command to simulator  based on the latest processed motion data
+
             if (state == ControllerState.Started || state == ControllerState.Connected)
             {
                 SendMotionData();
             }
         }
 
-        void OnDestroy() // NNN
+        private void OnDestroy()
         {
-            Debug.Log("Destroying YawController");
+            if (instance != this) return;
+
             if (state != ControllerState.Initial && state != ControllerState.Disconnecting && device != null)
             {
                 DisconnectFromDevice(null, null);
             }
-            //Closing tcp & udp clients
-            tcpCLient.CloseConnection();
-            udpClient.StopListening();
-            Thread.Sleep(1000);
+
+            tcpCLient?.CloseConnection();
+            udpClient?.StopListening();
+
             instance = null;
-            //Debug.Log("Destroying YawController finish");
         }
 
-        void OnApplicationQuit()
+        private void OnApplicationQuit()
         {
-            //If our application terminates, sending Exit command to simulator if needed 
             if (state != ControllerState.Initial && state != ControllerState.Disconnecting && device != null)
             {
                 DisconnectFromDevice(null, null);
             }
-            //Closing tcp & udp clients
-            tcpCLient.CloseConnection();
-            udpClient.StopListening();
+
+            tcpCLient?.CloseConnection();
+            udpClient?.StopListening();
         }
 
-        /// <summary>
-        /// Sets the GameName
-        /// </summary>
-        public void SetGameName(string gameName)
-        {
-            this.gameName = gameName;
-        }
+        public void SetGameName(string gameName) => this.gameName = gameName;
 
-        //MARK: - Methods triggering delegate functions
-
-        /// <summary>
-        /// Sends a broadcast to the network
-        /// </summary>
         public void DiscoverDevices(int onPort)
         {
-            //Save a reference to port, which will be used in creating yawDevices when discovery responses arrive
-            //We have to use their listening port (this) - not from which it sends response
             discoveryPort = onPort;
-            //Send the discovery broadcast
             udpClient.SendBroadcast(onPort, Commands.DEVICE_DISCOVERY);
         }
 
-        /// <summary>
-        /// Connect to a YawDevice
-        /// </summary>
-        public void ConnectToDevice(YawDevice yawDevice, Action onSuccess, Action<String> onError)
+        public void ConnectToDevice(YawDevice yawDevice, Action onSuccess, Action<string> onError)
         {
             if (state == ControllerState.Initial)
             {
                 SetState(ControllerState.Connecting);
 
-                //Start tcp connection timeout
                 callbackTimeouts.tcpConnectionAttemptTimeout = StartCoroutine(ResponseTimeout((error) =>
                 {
-                    onError("Failed to create TCP connection");
+                    onError?.Invoke("Failed to create TCP connection");
                     SetState(ControllerState.Initial);
                     tcpCLient.StopConnecting();
-                    Debug.Log("TCP client connecting timeout- initial set before");
-
                 }));
 
-                //Start connecting to simulator's tcp server
-                tcpCLient.Initialize(yawDevice.IPAddress.ToString(),
-                                     yawDevice.TCPPort,
-                                     () =>
-                                     {
-                                         //Connected to tcp server
-                                         //Stop tcp connection timeout
-                                         StopCoroutine(callbackTimeouts.tcpConnectionAttemptTimeout);
-                                         callbackTimeouts.tcpConnectionAttemptTimeout = null;
-                                         //Set connected device to this device 
-                                         device = yawDevice;
-
-                                         //Start sending CHECK_IN command to connected tcp server
-                                         //Set CHECK_IN command callbacks and start command timeout
-                                         callBacks.connectingError = onError;
-                                         callBacks.connectingSuccess = onSuccess;
-                                         callbackTimeouts.connectingTimeout = StartCoroutine(ResponseTimeout((error) =>
-                                         {
-                                             onError(error);
-                                             SetState(ControllerState.Initial);
-                                         }));
-                                         //Send CHECK_IN command
-                                         tcpCLient.BeginSend(Commands.CHECK_IN(udpClientPort, gameName));
-
-                                         StartCoroutine(DeviceHeartbeat());
-                                     },
-                                     (error) =>
-                                     {
-                                         //Could not connect to tcp server
-                                         //Stop tcp connection timeout
-                                         StopCoroutine(callbackTimeouts.tcpConnectionAttemptTimeout);
-                                         callbackTimeouts.tcpConnectionAttemptTimeout = null;
-                                         onError(error);
-                                         //Set state back to initial
-                                         SetState(ControllerState.Initial);
-                                     });
-            }
-            else
-            {
-                //If we are already connected to a device, disconnect from it, then connect to new one
-                DisconnectFromDevice(
+                tcpCLient.Initialize(yawDevice.IPAddress.ToString(), yawDevice.TCPPort,
                     () =>
                     {
-                        ConnectToDevice(yawDevice, onSuccess, onError);
+                        StopCoroutineSafe(ref callbackTimeouts.tcpConnectionAttemptTimeout);
+                        device = yawDevice;
+
+                        callBacks.connectingError = onError;
+                        callBacks.connectingSuccess = onSuccess;
+
+                        callbackTimeouts.connectingTimeout = StartCoroutine(ResponseTimeout((error) =>
+                        {
+                            onError?.Invoke(error);
+                            SetState(ControllerState.Initial);
+                        }));
+
+                        tcpCLient.BeginSend(Commands.CHECK_IN(udpClientPort, gameName));
+                        StartCoroutine(DeviceHeartbeat());
                     },
                     (error) =>
                     {
-                        onError(error);
+                        //Could not connect to tcp server
+                        //Stop tcp connection timeout
+                        StopCoroutineSafe(ref callbackTimeouts.tcpConnectionAttemptTimeout);
+                        onError?.Invoke(error);
+                        SetState(ControllerState.Initial);
+                    }
+                );
+            }
+            else
+            {
+                DisconnectFromDevice(
+                    () => ConnectToDevice(yawDevice, onSuccess, onError),
+                    (error) =>
+                    {
+                        onError?.Invoke(error);
                         ConnectToDevice(yawDevice, onSuccess, onError);
-                    });
+                    }
+                );
             }
         }
 
-        /// <summary>
-        /// Send a START command to the connected simulator
-        /// </summary>
-        public void StartDevice(Action onSuccess = null, Action<String> onError = null)
+        public void StartDevice(Action onSuccess = null, Action<string> onError = null)
         {
             if (state == ControllerState.Connected)
             {
-                //Set START command callbacks and start command timeout
                 callBacks.startSuccess = onSuccess;
                 callBacks.startError = onError;
                 callbackTimeouts.startTimeout = StartCoroutine(ResponseTimeout(onError));
                 SetState(ControllerState.Starting);
-                //Send START command
                 tcpCLient.BeginSend(Commands.START);
-                //Set state to starting
             }
-            else
-            {
-                onError("Attempted to start device when device has not been in connected ready state");
-            }
+            else onError?.Invoke("Attempted to start device when device has not been in connected ready state");
         }
 
-        /// <summary>
-        /// Send a STOP command to the connected simulator
-        /// </summary>
-        public void StopDevice(bool park, Action onSuccess = null, Action<String> onError = null)
+        public void StopDevice(bool park, Action onSuccess = null, Action<string> onError = null)
         {
             if (state == ControllerState.Started)
             {
-                //Set STOP command callbacks and start command timeout
                 callBacks.stopSuccess = onSuccess;
                 callBacks.stopError = onError;
                 callbackTimeouts.stopTimeout = StartCoroutine(ResponseTimeout(onError));
                 SetState(ControllerState.Stopping);
-                //Send STOP command
                 tcpCLient.BeginSend(new byte[] { Commands.STOP, (byte)(park ? 1 : 0) });
-                //Set state to stopping
             }
-            else
-            {
-                onError("Attempted to stop simulator when simulator had not been in started state");
-            }
+            else onError?.Invoke("Attempted to stop simulator when simulator had not been in started state");
         }
 
-        /// <summary>
-        /// Send a CALIBRATE command to the connected simulator
-        /// </summary>
         public void CalibrateDevice(bool allAxis)
         {
             if (state == ControllerState.Connected)
             {
                 tcpCLient.BeginSend(new byte[2] { Commands.CALIBRATE[0], (byte)(allAxis ? 1 : 0) });
-                //Set state to starting
             }
         }
-        
-        /// <summary>
-        /// Disconnect from the connected yawdevice, onSuccess is called afterwards
-        /// </summary>
-        public void DisconnectFromDevice(Action onSuccess, Action<String> onError)
+
+        public void DisconnectFromDevice(Action onSuccess, Action<string> onError)
         {
             if (state != ControllerState.Initial)
             {
-                //Set EXIT command callbacks and start command timeout
                 callBacks.exitSuccess = onSuccess;
                 callBacks.exitError = onError;
 
                 callbackTimeouts.exitTimeout = StartCoroutine(ResponseTimeout((error) =>
                 {
-                    //If we reach timeout without server response, set state back to initial
-                    //This way we reach disconnected and ready state anyway
                     SetState(ControllerState.Initial);
-                    if (onError != null)
-                    {
-                        onError(error);
-                    }
+                    onError?.Invoke(error);
                 }));
-                //Send EXIT command
-                tcpCLient.BeginSend(Commands.EXIT);
-                //Set state to disconnecting
-                SetState(ControllerState.Disconnecting);
 
-                onDisconnected.Invoke();
+                tcpCLient.BeginSend(Commands.EXIT);
+                SetState(ControllerState.Disconnecting);
+                onDisconnected?.Invoke();
             }
-            else
-            {
-                onError("Attempted to disconnect when no device was connected");
-            }
+            else onError?.Invoke("Attempted to disconnect when no device was connected");
         }
 
-        /// <summary>
-        /// This function handles the incoming UDP packages from the yawDevice
-        /// </summary>
         public void DidRecieveUDPMessage(string message, IPEndPoint remoteEndPoint)
         {
-            //Console.WriteLine(message);
-            MatchCollection regular = Regex.Matches(message, @"(?:S?([YPR]|U))\[(-?[0-9]+(?:\.[0-9]+))\]");
+            //MatchCollection regular = Regex.Matches(message, @"(?:S?([YPR]|U))\[(-?[0-9]+(?:\.[0-9]+))\]");
 
-            //at least 3 matches (Y,P,R), and U (battery) is optional
-            if (regular.Count >= 3)
+            if (message.Contains("Y[") || message.Contains("P[") || message.Contains("R["))
             {
-                //Iterate through matches
-                foreach (Match m in regular)
+                ExtractValue(message, "Y[", ref device.ActualPosition.yaw);
+                ExtractValue(message, "P[", ref device.ActualPosition.pitch);
+                ExtractValue(message, "R[", ref device.ActualPosition.roll);
+                
+                if (ExtractValue(message, "U[", ref device.batteryVoltage))
                 {
-                    if (m.Groups.Count >= 2)
-                    {
-                        switch (m.Groups[1].Value)
-                        {
-                            case "Y":
-                                //device.ActualPosition.yaw = float.Parse(m.Groups[2].Value);
-                                float.TryParse(m.Groups[2].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out device.ActualPosition.yaw);
-                                break;
-                            case "P":
-                                float.TryParse(m.Groups[2].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out device.ActualPosition.pitch);
-                                break;
-                            case "R":
-                                float.TryParse(m.Groups[2].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out device.ActualPosition.roll);
-                                break;
-                            case "U":
-                                float.TryParse(m.Groups[2].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out device.batteryVoltage);
-                                device.batteryPercent = Mathf.InverseLerp(2.8f, 4.2f, device.batteryVoltage);
-                                break;
-
-                        }
-
-                    }
+                    device.batteryPercent = Mathf.InverseLerp(2.8f, 4.2f, device.batteryVoltage);
                 }
             }
 
             if (message.Contains("YAWDEVICE"))
             {
-                //We recieved a device discovery answer message
-                //example device discovery answer: "YAWDEVICE;MacAddrId;MyDeviceName;" + tcpServerPort + (state == DeviceState.Available ? ";OK" : ";RESERVED");
                 var messageParts = message.Split(';');
-                var ip = remoteEndPoint.Address;
-                var udp = discoveryPort;
-                int tcp;
-
-                if (messageParts.Length >= 5 && int.TryParse(messageParts[3], out tcp))
+                if (messageParts.Length >= 5 && int.TryParse(messageParts[3], out int tcp))
                 {
                     DeviceStatus status = messageParts[4] == "AVAILABLE" ? DeviceStatus.Available : DeviceStatus.Reserved;
-                    var yawDevice = new YawDevice(ip, tcp, udp, messageParts[1], messageParts[2], status);
-                    //Call delegate function if we have a delegate
-                    if (ControllerDelegate != null)
-                    {
-                        ControllerDelegate.DidFoundDevice(yawDevice);
-                    }
+                    var yawDevice = new YawDevice(remoteEndPoint.Address, tcp, discoveryPort, messageParts[1], messageParts[2], status);
+                    ControllerDelegate?.DidFoundDevice(yawDevice);
                 }
             }
         }
 
-        /// <summary>
-        /// This function handles the incoming TCP commands from the yawDevice
-        /// </summary>
+        private bool ExtractValue(string msg, string key, ref float result)
+        {
+            int startIdx = msg.IndexOf(key);
+            if (startIdx == -1) return false;
+            
+            startIdx += 2;
+            int endIdx = msg.IndexOf(']', startIdx);
+            
+            if (endIdx != -1)
+            {
+                string valStr = msg.Substring(startIdx, endIdx - startIdx);
+                return float.TryParse(valStr, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+            }
+            return false;
+        }
+
         public void DidRecieveTCPMessage(byte[] data)
         {
-            //data.Length can't be 0 - YawTcpClient would not dispatch it
-            //Read command id from the array
+            if (data == null || data.Length == 0) return;
+
             byte commandId = data[0];
-            // Debug.Log(commandId + " " + data.Length);
             switch (commandId)
             {
                 case CommandIds.CHECK_IN_ANS:
-
-                    Invoke("UpdateIMUOffset", 0.1f);
-
-                    //Stop timeout
-                    if (callbackTimeouts.connectingTimeout != null)
-                    {
-                        StopCoroutine(callbackTimeouts.connectingTimeout);
-                        callbackTimeouts.connectingTimeout = null;
-                    }
+                    Invoke(nameof(UpdateIMUOffset), 0.1f);
+                    StopCoroutineSafe(ref callbackTimeouts.connectingTimeout);
 
                     if (state == ControllerState.Connecting)
                     {
                         string message = Encoding.ASCII.GetString(data, 1, data.Length - 1);
-                        //   Debug.Log(message);
                         if (message.Contains("AVAILABLE"))
                         {
-                            foreach (Action a in OnConnectReceivers)
-                            {
-                                a.Invoke();
-                            }
-                            onConnected.Invoke();
-                            //Simulator is available, we have succesfully checked in, set state to connected
+                            foreach (Action a in OnConnectReceivers) a?.Invoke();
+                            onConnected?.Invoke();
+
                             udpClient.SetRemoteEndPoint(device.IPAddress, device.UDPPort);
                             SetState(ControllerState.Connected);
-                            //Call success callback
-                            if (callBacks.connectingSuccess != null)
-                            {
-                                callBacks.connectingSuccess();
-                                callBacks.connectingSuccess = null;
-                                callBacks.connectingError = null;
-                            }
+
+                            callBacks.connectingSuccess?.Invoke();
+                            ClearCallbacks(ref callBacks.connectingSuccess, ref callBacks.connectingError);
                         }
                         else
                         {
-                            //Simulator is reserved, setting state back to initial
                             var messageParts = message.Split(';');
                             if (messageParts.Length != 3) return;
-                            var reservingGameName = messageParts[1];
-                            var reservingIp = messageParts[2];
+
                             SetState(ControllerState.Initial);
-                            //Call error callback
-                            if (callBacks.connectingError != null)
-                            {
-                                callBacks.connectingError("Device is in use from: " + reservingIp + " with game: " + gameName);
-                                callBacks.connectingError = null;
-                                callBacks.connectingSuccess = null;
-                            }
+                            callBacks.connectingError?.Invoke($"Device is in use from: {messageParts[2]} with game: {messageParts[1]}");
+                            ClearCallbacks(ref callBacks.connectingSuccess, ref callBacks.connectingError);
                         }
                     }
                     break;
@@ -830,6 +701,21 @@ namespace YawVR
             onError("Command timeout");
         }
 
+        private void StopCoroutineSafe(ref Coroutine routine)
+        {
+            if (routine != null)
+            {
+                StopCoroutine(routine);
+                routine = null;
+            }
+        }
+
+        private void ClearCallbacks(ref Action success, ref Action<string> error)
+        {
+            success = null;
+            error = null;
+        }
+
         private float SignedForm(float angle)
         {
             return angle >= 180 ? angle - 360 : angle;
@@ -899,10 +785,10 @@ namespace YawVR
         private void DidFoundDevice(YawDevice device)
         {
             //    Debug.Log("Did found device: " + device.Name);
-            if (YawController.Instance().State == ControllerState.Initial && (device.Status == DeviceStatus.Available || device.Status == DeviceStatus.Unknown))
+            if (YawController.Instance.State == ControllerState.Initial && (device.Status == DeviceStatus.Available || device.Status == DeviceStatus.Unknown))
             {
                 Debug.Log("-----------------------------CONNECT TO A DEVICE---------------------------");
-                YawController.Instance().ConnectToDevice(device, () =>
+                YawController.Instance.ConnectToDevice(device, () =>
                 {
                     Debug.Log("YAWCONTROLLER: connected");
                 }, (error) => { Debug.Log("kapcsolat error"); });

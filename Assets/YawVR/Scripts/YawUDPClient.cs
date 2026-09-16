@@ -3,32 +3,43 @@ using System.Net.Sockets;
 using System.Text;
 using System.Net;
 using UnityEngine;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace YawVR
 {
-    public interface YawUDPClientDelegate
+    public interface IYawUDPClientDelegate
     {
         void DidRecieveUDPMessage(string message, IPEndPoint remoteEndPoint);
     }
 
     public class YawUDPClient
     {
-        private int listeningPort;
+        private readonly int listeningPort;
         private UdpClient udpClient;
-        IPEndPoint remoteEndPoint;
-        public YawUDPClientDelegate udpDelegate;
-        IAsyncResult ar_ = null;
+        private IPEndPoint remoteEndPoint;
+        public IYawUDPClientDelegate udpDelegate;
+
+        private CancellationTokenSource cts;
 
         public YawUDPClient(int listeningPort)
         {
+            this.listeningPort = listeningPort;
+            InitializeUdpClient();
+        }
+
+        private void InitializeUdpClient()
+        {
             try
             {
-                this.listeningPort = listeningPort;
-                udpClient = new UdpClient(listeningPort);
+                udpClient = new UdpClient(listeningPort)
+                {
+                    EnableBroadcast = true
+                };
             }
             catch (Exception err)
             {
-                Debug.Log("Error in starting udp listening port: " + err);
+                Debug.LogError($"[YawUDPClient] Error initializing UDP socket on port {listeningPort}: {err.Message}");
             }
         }
 
@@ -39,73 +50,101 @@ namespace YawVR
 
         public void StartListening()
         {
-            try
+            if (udpClient == null)
             {
-                StartListeningToMessages();
+                InitializeUdpClient();
             }
-            catch (Exception err)
-            {
-                Debug.Log("Error in starting udp listening port: " + err);
-            }
+
+            cts?.Cancel();
+            cts = new CancellationTokenSource();
+
+            _ = ReceiveLoopAsync(cts.Token);
         }
 
         public void StopListening()
         {
-            try
-            {
-                udpClient.Close();
-            }
-            catch (Exception err)
-            {
-                Debug.Log("Error happened on closing udp listening client" + err);
-            }
-        }
+            cts?.Cancel();
+            cts?.Dispose();
+            cts = null;
 
-        private void StartListeningToMessages()
-        {
-            ar_ = udpClient.BeginReceive(Receive, new object());
-        }
-
-        private void Receive(IAsyncResult ar)
-        {
-            IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Any, this.listeningPort);
-            byte[] bytes = udpClient.EndReceive(ar, ref ipEndPoint);
-            string message = Encoding.ASCII.GetString(bytes);
-
-            if (!message.Contains("YAW_CALLING"))
+            if (udpClient != null)
             {
-                ActionBus.Instance.Add(() =>
+                try
                 {
-                    //Debug.Log(message);
-                    udpDelegate.DidRecieveUDPMessage(message, ipEndPoint);
-                });
+                    udpClient.Close();
+                }
+                catch (Exception err)
+                {
+                    Debug.LogWarning($"[YawUDPClient] Error closing UDP client: {err.Message}");
+                }
+                finally
+                {
+                    udpClient = null;
+                }
             }
-            StartListeningToMessages();
+        }
+
+        private async Task ReceiveLoopAsync(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested && udpClient != null)
+            {
+                try
+                {
+                    UdpReceiveResult result = await udpClient.ReceiveAsync();
+
+                    byte[] bytes = result.Buffer;
+                    IPEndPoint remoteEP = result.RemoteEndPoint;
+                    string message = Encoding.ASCII.GetString(bytes);
+
+                    if (!message.Contains("YAW_CALLING"))
+                    {
+                        ActionBus.Instance.Add(() =>
+                        {
+                            udpDelegate?.DidRecieveUDPMessage(message, remoteEP);
+                        });
+                    }
+                }
+                catch (ObjectDisposedException)
+                {
+                    break;
+                }
+                catch (SocketException) when (token.IsCancellationRequested)
+                {
+                    break;
+                }
+                catch (Exception err)
+                {
+                    Debug.LogError($"[YawUDPClient] Error receiving UDP packet: {err.Message}");
+                }
+            }
         }
 
         public void SendBroadcast(int port, byte[] data)
         {
-            if (udpClient == null) return;
+            if (udpClient == null || data == null || data.Length == 0) return;
+
             try
             {
-                IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Parse("255.255.255.255"), port);
-                udpClient.Send(data, data.Length, ipEndPoint);
+                IPEndPoint broadcastEndPoint = new(IPAddress.Broadcast, port);
+                udpClient.Send(data, data.Length, broadcastEndPoint);
             }
             catch (Exception err)
             {
-                Debug.Log("Error in sending broadcast: " + err);
+                Debug.LogError($"[YawUDPClient] Error sending broadcast: {err.Message}");
             }
         }
 
         public void Send(byte[] data)
         {
+            if (udpClient == null || remoteEndPoint == null || data == null || data.Length == 0) return;
+
             try
             {
                 udpClient.Send(data, data.Length, remoteEndPoint);
             }
             catch (Exception err)
             {
-                Debug.LogError("Error in sending data in YawUDPClient" + err);
+                Debug.LogError($"[YawUDPClient] Error sending UDP data: {err.Message}");
             }
         }
     }
