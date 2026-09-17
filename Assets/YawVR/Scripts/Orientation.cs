@@ -2,7 +2,7 @@
 
 public class Orientation : MonoBehaviour
 {
-    Vector3 pitchYawRoll
+    private Vector3 PitchYawRoll
     {
         get
         {
@@ -30,7 +30,7 @@ public class Orientation : MonoBehaviour
             float sine = UnaryTrim(transform.forward.y);
             return -Mathf.Asin(sine) * Mathf.Rad2Deg;
         }
-        set { pitchYawRoll = new Vector3(value, yaw, roll); }
+        set { PitchYawRoll = new Vector3(value, yaw, roll); }
     }
 
     /**
@@ -52,7 +52,7 @@ public class Orientation : MonoBehaviour
             float alpha = Vector3.Angle(vector, Vector3.forward);
             return vector.x > 0 ? alpha : -alpha;
         }
-        set { pitchYawRoll = new Vector3(pitch, value, roll); }
+        set { PitchYawRoll = new Vector3(pitch, value, roll); }
     }
 
     /**
@@ -65,7 +65,7 @@ public class Orientation : MonoBehaviour
             float sine = UnaryTrim(transform.right.y);
             return Mathf.Asin(sine) * Mathf.Rad2Deg;
         }
-        set { pitchYawRoll = new Vector3(pitch, yaw, value); }
+        set { PitchYawRoll = new Vector3(pitch, yaw, value); }
     }
 
     public float attitude

@@ -50,6 +50,7 @@ namespace YawVR
             v.x = Mathf.DeltaAngle(0, v.x);
             v.y = Mathf.DeltaAngle(0, v.y);
             v.z = Mathf.DeltaAngle(0, v.z);
+            
             return v;
         }
     }

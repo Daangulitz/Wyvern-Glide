@@ -36,10 +36,7 @@ public class ActionBus : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (instance == this)
-        {
-            instance = null;
-        }
+        if (instance == this) instance = null;
     }
 
     private void Update()

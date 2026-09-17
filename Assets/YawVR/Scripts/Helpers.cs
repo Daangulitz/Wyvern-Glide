@@ -30,8 +30,7 @@ namespace YawVR
                 ch = Convert.ToChar(Convert.ToInt32(Math.Floor(26 * random.NextDouble() + 65)));
                 builder.Append(ch);
             }
-            if (lowerCase)
-                return builder.ToString().ToLower();
+            if (lowerCase) return builder.ToString().ToLower();
             return builder.ToString();
         }
 
@@ -39,8 +38,7 @@ namespace YawVR
         {
             foreach (string needle in needles)
             {
-                if (haystack.Contains(needle))
-                    return true;
+                if (haystack.Contains(needle)) return true;
             }
             return false;
         }

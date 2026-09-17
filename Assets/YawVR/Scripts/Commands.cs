@@ -24,7 +24,7 @@ namespace YawVR
         /// <summary>
         /// TCP CommandIDs
         /// </summary>
-        public static class CommandIds
+    public static class CommandIds
     {
         public const byte CHECK_IN = 0x30;
         public const byte START = 0xA1;
@@ -110,7 +110,7 @@ namespace YawVR
         //TCP
         public static byte[] CHECK_IN(int udpListeningPort, string gameName)
         {
-            List<byte> message = new List<byte>();
+            List<byte> message = new();
 
             message.AddRange(IntToByteArray(udpListeningPort));
             message.AddRange(Encoding.ASCII.GetBytes(gameName));
