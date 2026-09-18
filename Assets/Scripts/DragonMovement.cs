@@ -26,6 +26,10 @@ public class SimpleFlight : MonoBehaviour
     public float levelThresholdDeg = 5f;
     [Range(10f, 90f)] public float maxTiltAngle = 45f;
 
+    [Header("Animation")]
+    [SerializeField] private Animator animator;
+    [SerializeField] private float flyingPitchThreshold = 2f; // deg, avoids flicker near level
+
     [Header("Debug")]
     public GameObject debugDragon; // active = cleared to move, inactive = still blocked
 
@@ -66,13 +70,22 @@ public class SimpleFlight : MonoBehaviour
     void OnCalibratePerformed(InputAction.CallbackContext ctx)
     {
         if (IsValidRotation(_currentControllerRotation))
+        {
             Calibrate();
+            _hasCalibrated = true;
+        }
     }
 
     void Start()
     {
         if (calibrateOnStart)
-            _pendingCalibration = true; // wait for a valid pose instead of calibrating blindly
+        {
+            _pendingCalibration = true;
+            _hasCalibrated = false;
+        }
+
+        if (animator == null)
+            animator = GetComponent<Animator>();
     }
 
     public void Calibrate()
@@ -91,6 +104,7 @@ public class SimpleFlight : MonoBehaviour
     void FixedUpdate()
     {
         if (rb == null || controllerRotationAction == null) return;
+        if (_hasCalibrated == false) return; // don't move until we've calibrated
 
         _currentControllerRotation = controllerRotationAction.action.ReadValue<Quaternion>();
 
@@ -124,13 +138,24 @@ public class SimpleFlight : MonoBehaviour
         float rollInput = Mathf.Clamp(stickDir.x / Mathf.Sin(maxTiltRad), -1f, 1f);
 
         transform.Rotate(pitchInput * pitchSpeed * Time.fixedDeltaTime,
-                         rollInput * yawFromRoll * Time.fixedDeltaTime,
-                         -rollInput * rollSpeed * Time.fixedDeltaTime,
-                         Space.Self);
+            rollInput * yawFromRoll * Time.fixedDeltaTime,
+            -rollInput * rollSpeed * Time.fixedDeltaTime,
+            Space.Self);
 
         // compute pitch angle in degrees: positive = nose up, negative = nose down
         float pitchRad = Mathf.Asin(Mathf.Clamp(transform.forward.y, -1f, 1f));
         float pitchDeg = pitchRad * Mathf.Rad2Deg;
+
+        // Update animator: true = climbing, false = diving.
+        // Hysteresis band around 0 (±flyingPitchThreshold) avoids flicker near level flight.
+        if (animator != null)
+        {
+            if (pitchDeg > flyingPitchThreshold)
+                animator.SetBool("Flying", true);
+            else if (pitchDeg < -flyingPitchThreshold)
+                animator.SetBool("Flying", false);
+            // else: keep whatever the last state was
+        }
 
         // pitchFactor: positive when diving (pitchDeg < 0), negative when climbing (pitchDeg > 0)
         float pitchFactor = -pitchDeg / 90f;
