@@ -13,9 +13,9 @@ public class RotateAndSway : MonoBehaviour
     [Tooltip("Reverse the rotation direction")]
     public bool isReversed = false;
 
-    [Tooltip("Maximum rotation speed magnitude (clamped between 0 and 260)")]
-    [Range(0f, 260f)]
-    public float maxSpeed = 260f;
+    [Tooltip("Maximum rotation speed magnitude (clamped between 0 and 255)")]
+    [Range(0f, 255f)]
+    public float maxSpeed = 255f;
 
     [Tooltip("Acceleration rate (degrees per second squared)")]
     public float rampSpeed = 150f;

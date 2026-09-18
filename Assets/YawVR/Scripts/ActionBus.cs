@@ -9,11 +9,14 @@ public class ActionBus : MonoBehaviour
 {
     private static readonly ConcurrentQueue<Action> actionQueue = new();
     private static ActionBus instance;
+    private static bool isQuitting = false;
 
     public static ActionBus Instance
     {
         get
         {
+            if (isQuitting) return null;
+
             if (instance == null)
             {
                 throw new Exception("[ActionBus] Instance is null. Ensure ActionBus is present in the scene.");
@@ -31,12 +34,22 @@ public class ActionBus : MonoBehaviour
         }
 
         instance = this;
-        //DontDestroyOnLoad(this.gameObject); // Uncomment if this needs to persist across scenes
+
+        if (transform.parent == null) DontDestroyOnLoad(gameObject);
+    }
+
+    private void OnApplicationQuit()
+    {
+        isQuitting = true;
     }
 
     private void OnDestroy()
     {
-        if (instance == this) instance = null;
+        if (instance == this)
+        {
+            instance = null;
+            isQuitting = true;
+        }
     }
 
     private void Update()
@@ -63,7 +76,7 @@ public class ActionBus : MonoBehaviour
 
     public void Add(Action action)
     {
-        if (action == null) return;
+        if (isQuitting ||action == null) return;
         actionQueue.Enqueue(action);
     }
 }

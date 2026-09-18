@@ -108,6 +108,10 @@ namespace YawVR
                 {
                     break;
                 }
+                catch (NullReferenceException) when (token.IsCancellationRequested || udpClient == null)
+                {
+                    break;
+                }
                 catch (SocketException) when (token.IsCancellationRequested)
                 {
                     break;
