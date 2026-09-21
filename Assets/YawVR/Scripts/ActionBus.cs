@@ -76,7 +76,7 @@ public class ActionBus : MonoBehaviour
 
     public void Add(Action action)
     {
-        if (isQuitting ||action == null) return;
+        if (isQuitting || action == null) return;
         actionQueue.Enqueue(action);
     }
 }
