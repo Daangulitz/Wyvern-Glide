@@ -313,8 +313,10 @@ namespace YawVR
 
         public void StartDevice()
         {
+            Debug.Log("StartDevice called");
             if (YawController.Instance.State == ControllerState.Connected)
             {
+                Debug.Log("Starting device");
                 YawController.Instance.StartDevice();
             }
         }

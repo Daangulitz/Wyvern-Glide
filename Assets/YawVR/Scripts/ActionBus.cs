@@ -27,6 +27,8 @@ public class ActionBus : MonoBehaviour
 
     private void Awake()
     {
+        isQuitting = false;
+
         if (instance != null && instance != this)
         {
             Destroy(gameObject);
@@ -48,7 +50,7 @@ public class ActionBus : MonoBehaviour
         if (instance == this)
         {
             instance = null;
-            isQuitting = true;
+            //isQuitting = true;
         }
     }
 

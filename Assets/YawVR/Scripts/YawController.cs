@@ -579,7 +579,8 @@ namespace YawVR
                             newState = DeviceState.PARKING;
                             break;
                     }
-                    if (device.State != newState) onStateChanged.Invoke(newState);
+                    if (device.State != newState) {onStateChanged.Invoke(newState);
+                    Debug.Log($"[YawController] Device state changed to: {newState}");}
                     this.device.State = newState;
                     break;
 

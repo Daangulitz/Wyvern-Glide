@@ -42,7 +42,14 @@ namespace YawVR
                     connected = true;
                     Debug.Log($"[YawTCPClient] Connected to: {ip}:{port}");
 
-                    ActionBus.Instance.Add(() => onConnectionSuccess?.Invoke());
+                    try
+                    {
+                        ActionBus.Instance.Add(() => onConnectionSuccess?.Invoke());
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogError($"[YawTCPClient] ActionBus unavailable: {e.Message}");
+                    }
 
                     _ = ReadLoopAsync(cts.Token);
                 }
@@ -93,13 +100,11 @@ namespace YawVR
             }
             finally
             {
-                if (!connected)
+                bool wasIntentional = token.IsCancellationRequested;
+                CloseConnection();
+                if (!wasIntentional)
                 {
-                    CloseConnection();
-                    ActionBus.Instance.Add(() =>
-                    {
-                        tcpDelegate?.DidLostServerConnection();
-                    });
+                    ActionBus.Instance?.Add(() => tcpDelegate?.DidLostServerConnection());
                 }
             }
         }
