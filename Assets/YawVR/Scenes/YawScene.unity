@@ -465,8 +465,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5013decc817b30944b51b881555c7dac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  stoppedColor: {r: 1, g: 0, b: 0.009791374, a: 0}
-  startedColor: {r: 0.17515779, g: 1, b: 0, a: 0}
 --- !u!1 &1649308667
 GameObject:
   m_ObjectHideFlags: 0
@@ -659,8 +657,16 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 114097211993025946, guid: b2db00cc4030f47faad8506c631645eb, type: 3}
+      propertyPath: udpClientPort
+      value: 50050
+      objectReference: {fileID: 0}
+    - target: {fileID: 114097211993025946, guid: b2db00cc4030f47faad8506c631645eb, type: 3}
       propertyPath: debug_ipAddress
-      value: 10.17.31.114
+      value: 10.17.34.140
+      objectReference: {fileID: 0}
+    - target: {fileID: 114097211993025946, guid: b2db00cc4030f47faad8506c631645eb, type: 3}
+      propertyPath: onStateChanged.m_PersistentCalls.m_Calls.Array.size
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 114097211993025946, guid: b2db00cc4030f47faad8506c631645eb, type: 3}
       propertyPath: onStateChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Target
