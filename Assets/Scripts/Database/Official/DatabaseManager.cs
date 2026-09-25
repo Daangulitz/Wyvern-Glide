@@ -4,6 +4,10 @@ using UnityEngine.Networking;
 
 public class DatabaseManager : MonoBehaviour
 {
+    public ActivePlayer ActivePlayer { get; private set; }
+
+    public System.Action OnActivePlayerLoaded;
+
     private const string activePlayerEndpoint =
         "/player/active?clientId=1";
 
@@ -30,7 +34,7 @@ public class DatabaseManager : MonoBehaviour
 
         if (request.responseCode == 404)
         {
-            Debug.Log("Er is momenteel geen actieve speler.");
+            Debug.Log("Er is geen actieve speler.");
             yield break;
         }
 
@@ -40,14 +44,16 @@ public class DatabaseManager : MonoBehaviour
             yield break;
         }
 
-        ActivePlayer activePlayer =
+        ActivePlayer =
             JsonUtility.FromJson<ActivePlayer>(
                 request.downloadHandler.text
             );
 
-        Debug.Log($"Speler: {activePlayer.name}");
-        Debug.Log($"Player ID: {activePlayer.playerId}");
-        Debug.Log($"Game: {activePlayer.game.name}");
-        Debug.Log($"Gebruikt score: {activePlayer.game.usesScore}");
+        OnActivePlayerLoaded?.Invoke();
+
+        Debug.Log($"Speler: {ActivePlayer.name}");
+        Debug.Log($"Player ID: {ActivePlayer.playerId}");
+        Debug.Log($"Game: {ActivePlayer.game.name}");
+        Debug.Log($"Gebruikt score: {ActivePlayer.game.usesScore}");
     }
 }
