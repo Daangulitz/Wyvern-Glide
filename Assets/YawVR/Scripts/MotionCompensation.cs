@@ -32,7 +32,7 @@ namespace YawVR
 
             simData.y = -yawController.Device.ActualPosition.yaw;
             Quaternion targetRotation = Quaternion.Euler(simData - offset);
-            cameraOffsetTransform.rotation = Quaternion.Slerp(cameraOffsetTransform.rotation, targetRotation, Time.deltaTime * smoothingSpeed);
+            cameraOffsetTransform.localRotation = Quaternion.Slerp(cameraOffsetTransform.localRotation, targetRotation, Time.deltaTime * smoothingSpeed);
         }
     }
 }
