@@ -7,9 +7,11 @@ namespace YawVR
     /// </summary>
     public class StartYaw : MonoBehaviour
     {
+        [SerializeField] private float startDelay = 3f;
+
         private void Start()
         {
-            Invoke(nameof(StartDevice), 5f);
+            Invoke(nameof(StartDevice), startDelay);
         }
 
         private void StartDevice()

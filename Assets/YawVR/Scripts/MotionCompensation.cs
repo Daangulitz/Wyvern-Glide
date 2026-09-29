@@ -31,8 +31,6 @@ namespace YawVR
             if (YawController.Instance.State != ControllerState.Started) return;
 
             simData.y = -yawController.Device.ActualPosition.yaw;
-            Debug.Log($"Yaw: {simData.y:F2}, Offset: {offset.y:F2}, Delta: {simData.y - offset.y:F2}");
-
             Quaternion targetRotation = Quaternion.Euler(simData - offset);
             cameraOffsetTransform.localRotation = Quaternion.Slerp(cameraOffsetTransform.localRotation, targetRotation, Time.deltaTime * smoothingSpeed);
         }

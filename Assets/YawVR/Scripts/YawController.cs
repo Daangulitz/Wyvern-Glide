@@ -411,7 +411,13 @@ namespace YawVR
                 {
                     DeviceStatus status = messageParts[4] == "AVAILABLE" ? DeviceStatus.Available : DeviceStatus.Reserved;
                     var yawDevice = new YawDevice(remoteEndPoint.Address, tcp, discoveryPort, messageParts[1], messageParts[2], status);
+
                     ControllerDelegate?.DidFoundDevice(yawDevice);
+
+                    if (connectType == ConnectType.CONNECT_FIRST_FOUND_DEVICE)
+                    {
+                        HandleAutoDiscoveredDevice(yawDevice);
+                    }
                 }
             }
         }
@@ -783,13 +789,13 @@ namespace YawVR
         }
 
         // YawControllerDelegate functions
-        private void DidFoundDevice(YawDevice device)
+        private void HandleAutoDiscoveredDevice(YawDevice device)
         {
             //    Debug.Log("Did found device: " + device.Name);
-            if (YawController.Instance.State == ControllerState.Initial && (device.Status == DeviceStatus.Available || device.Status == DeviceStatus.Unknown))
+            if (state == ControllerState.Initial && (device.Status == DeviceStatus.Available || device.Status == DeviceStatus.Unknown))
             {
                 Debug.Log("-----------------------------CONNECT TO A DEVICE---------------------------");
-                YawController.Instance.ConnectToDevice(device, () =>
+                ConnectToDevice(device, () =>
                 {
                     Debug.Log("YAWCONTROLLER: connected");
                 }, (error) => { Debug.Log("kapcsolat error"); });
