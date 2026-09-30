@@ -37,7 +37,7 @@ public class ActionBus : MonoBehaviour
 
         instance = this;
 
-        if (transform.parent == null) DontDestroyOnLoad(gameObject);
+        DontDestroyOnLoad(gameObject);
     }
 
     private void OnApplicationQuit()

@@ -88,7 +88,7 @@ namespace YawVR
         /// <summary>
         /// A found is device on network
         /// </summary>
-        void DidFoundDevice(YawDevice device);
+        //void DidFoundDevice(YawDevice device);
 
         /// <summary>
         /// Disconnected from device
@@ -224,7 +224,7 @@ namespace YawVR
 
         private void Start()
         {
-            if (connectType == ConnectType.CONNECT_FIRST_FOUND_DEVICE) AutoConnectFirst();
+            if (connectType == ConnectType.CONNECT_FIRST_FOUND_DEVICE) AutoConnect();
 
             if (connectType == ConnectType.DEBUG_CONNECT_TO_IP)
             {
@@ -234,9 +234,9 @@ namespace YawVR
 
         private void FixedUpdate()
         {
-            referenceRotation.pitch = orientation.pitch;
-            referenceRotation.yaw = orientation.yaw;
-            referenceRotation.roll = orientation.roll;
+            referenceRotation.pitch = orientation.Pitch;
+            referenceRotation.yaw = orientation.Yaw;
+            referenceRotation.roll = orientation.Roll;
 
             if (state == ControllerState.Started || state == ControllerState.Connected)
             {
@@ -311,8 +311,6 @@ namespace YawVR
                     },
                     (error) =>
                     {
-                        //Could not connect to tcp server
-                        //Stop tcp connection timeout
                         StopCoroutineSafe(ref callbackTimeouts.tcpConnectionAttemptTimeout);
                         onError?.Invoke(error);
                         SetState(ControllerState.Initial);
@@ -342,7 +340,7 @@ namespace YawVR
                 SetState(ControllerState.Starting);
                 tcpCLient.BeginSend(Commands.START);
             }
-            else onError?.Invoke("Attempted to start device when device has not been in connected ready state");
+            else onError?.Invoke("[YawController] Attempted to start device when device has not been in connected ready state");
         }
 
         public void StopDevice(bool park, Action onSuccess = null, Action<string> onError = null)
@@ -355,7 +353,7 @@ namespace YawVR
                 SetState(ControllerState.Stopping);
                 tcpCLient.BeginSend(new byte[] { Commands.STOP, (byte)(park ? 1 : 0) });
             }
-            else onError?.Invoke("Attempted to stop simulator when simulator had not been in started state");
+            else onError?.Invoke("[YawController] Attempted to stop simulator when simulator had not been in started state");
         }
 
         public void CalibrateDevice(bool allAxis)
@@ -381,9 +379,10 @@ namespace YawVR
 
                 tcpCLient.BeginSend(Commands.EXIT);
                 SetState(ControllerState.Disconnecting);
+                Debug.Log("[YawController] Disconnected from device");
                 onDisconnected?.Invoke();
             }
-            else onError?.Invoke("Attempted to disconnect when no device was connected");
+            else onError?.Invoke("[YawController] Attempted to disconnect when no device was connected");
         }
 
         public void DidRecieveUDPMessage(string message, IPEndPoint remoteEndPoint)
@@ -410,7 +409,7 @@ namespace YawVR
                     DeviceStatus status = messageParts[4] == "AVAILABLE" ? DeviceStatus.Available : DeviceStatus.Reserved;
                     var yawDevice = new YawDevice(remoteEndPoint.Address, tcp, discoveryPort, messageParts[1], messageParts[2], status);
 
-                    ControllerDelegate?.DidFoundDevice(yawDevice);
+                    Debug.Log("[YawController] Found device: " + yawDevice.Name);
 
                     if (connectType == ConnectType.CONNECT_FIRST_FOUND_DEVICE)
                     {
@@ -755,9 +754,8 @@ namespace YawVR
         #region AutoConnect
         private Coroutine discoveryCoroutine;
 
-        private void AutoConnectFirst()
+        private void AutoConnect()
         {
-            Debug.Log("-----------------------------DISCOVER---------------------------");
             discoveryCoroutine = StartCoroutine(DeviceDiscoveryCoroutine());
         }
 
@@ -781,11 +779,10 @@ namespace YawVR
             if (state == ControllerState.Initial && (device.Status == DeviceStatus.Available || device.Status == DeviceStatus.Unknown))
             {
                 StopCoroutineSafe(ref discoveryCoroutine);
-                Debug.Log("-----------------------------CONNECT TO A DEVICE---------------------------");
                 ConnectToDevice(device, () =>
                 {
-                    Debug.Log("YAWCONTROLLER: connected");
-                }, (error) => { Debug.Log("kapcsolat error"); });
+                    StartDevice();
+                }, (error) => { Debug.Log("[YawController] connection error"); });
             }
         }
 

@@ -4,6 +4,7 @@ using System.Net;
 using System.Threading;
 using UnityEngine;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace YawVR
 {
@@ -22,10 +23,12 @@ namespace YawVR
         private bool connected = false;
 
         public bool Connected => tcpClient != null && tcpClient.Connected && connected;
+        private readonly SemaphoreSlim sendLock = new(1, 1);
+        private int connectionAttemptId = 0;
 
         public async void Initialize(string ip, int port, Action onConnectionSuccess, Action<string> onConnectionError)
         {
-            Debug.Log("[YawTCPClient] Started connecting...");
+            int myAttempt = ++connectionAttemptId;
             CloseConnection();
 
             cts = new CancellationTokenSource();
@@ -39,6 +42,7 @@ namespace YawVR
 
                 if (tcpClient.Connected)
                 {
+                    if (myAttempt != connectionAttemptId) return;
                     connected = true;
                     Debug.Log($"[YawTCPClient] Connected to: {ip}:{port}");
 
@@ -78,8 +82,11 @@ namespace YawVR
             {
                 NetworkStream ns = tcpClient.GetStream();
 
-                while (!token.IsCancellationRequested && tcpClient.Connected)
+                while (!token.IsCancellationRequested)
                 {
+                    var client = tcpClient;
+                    if (client == null || !client.Connected) break;
+
                     int bytesRead = await ns.ReadAsync(buffer, 0, buffer.Length, token);
                     if (bytesRead > 0)
                     {
@@ -94,6 +101,9 @@ namespace YawVR
                     else break;
                 }
             }
+            catch (ObjectDisposedException) { }
+            catch (OperationCanceledException) { }
+            catch (IOException) { }
             catch (Exception ex)
             {
                 Debug.LogWarning($"[YawTCPClient] Read error: {ex.Message}");
@@ -113,6 +123,7 @@ namespace YawVR
         {
             if (tcpClient == null || !tcpClient.Connected || data == null || data.Length == 0) return;
 
+            await sendLock.WaitAsync();
             try
             {
                 NetworkStream ns = tcpClient.GetStream();
@@ -121,6 +132,10 @@ namespace YawVR
             catch (Exception err)
             {
                 Debug.LogError($"[YawTCPClient] Error sending data: {err.Message}");
+            }
+            finally
+            {
+                sendLock.Release();
             }
         }
 

@@ -103,10 +103,11 @@ namespace YawVR
                     }
                 }
                 catch (ObjectDisposedException) { break; }
+                catch (NullReferenceException) { break; }
                 catch (SocketException) when (token.IsCancellationRequested) { break; }
-                catch (Exception err)
+                catch (Exception ex)
                 {
-                    Debug.LogError($"[YawUDPClient] Error receiving UDP packet: {err.Message}");
+                    Debug.LogError($"[YawUDPClient] Error receiving UDP packet: {ex.Message}");
                 }
             }
         }
