@@ -975,7 +975,7 @@ MonoBehaviour:
     - line: '|   cloudProjectId: de2ba000-8b5e-45e8-96f4-0b2ddbfb7bd9'
     - line: '|   framebufferDepthMemorylessMode: 0'
     - line: '|   qualitySettingsNames: []'
-    - line: '|   projectName: Wyvern-Glide 2026-09-15_10-25-29'
+    - line: '|   projectName: Wyvern-Glide'
     - line: '|   organizationId: jensmonne-as-publisher'
     - line: '|   cloudEnabled: 0'
     - line: '|   legacyClampBlendShapeWeights: 0'
