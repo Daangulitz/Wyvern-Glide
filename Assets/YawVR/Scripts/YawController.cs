@@ -224,9 +224,9 @@ namespace YawVR
 
         private void Start()
         {
-            if (connectType == ConnectType.CONNECT_FIRST_FOUND_DEVICE) AutoConnect();
+            if (connectType == ConnectType.ConnectFirstFoundDevice) AutoConnect();
 
-            if (connectType == ConnectType.DEBUG_CONNECT_TO_IP)
+            if (connectType == ConnectType.DebugConnectToIp)
             {
                 ConnectToDevice(new YawDevice(IPAddress.Parse(debug_ipAddress), 50020, 50010, "001", "DEBUG", DeviceStatus.Available), null, null);
             }
@@ -411,7 +411,7 @@ namespace YawVR
 
                     Debug.Log("[YawController] Found device: " + yawDevice.Name);
 
-                    if (connectType == ConnectType.CONNECT_FIRST_FOUND_DEVICE)
+                    if (connectType == ConnectType.ConnectFirstFoundDevice)
                     {
                         HandleAutoDiscoveredDevice(yawDevice);
                     }
@@ -564,20 +564,20 @@ namespace YawVR
 
                 case CommandIds.GET_STATE:
                     string statestring = Encoding.ASCII.GetString(data, 2, data.Length - 2).Trim();
-                    DeviceState newState = DeviceState.STOPPED;
+                    DeviceState newState = DeviceState.Stopped;
                     switch (statestring)
                     {
                         case "disabled":
-                            newState = DeviceState.STOPPED;
+                            newState = DeviceState.Stopped;
                             break;
                         case "simulation mode":
-                            newState = DeviceState.STARTED;
+                            newState = DeviceState.Started;
                             break;
                         case "emergency mode":
-                            newState = DeviceState.NOTRACKER;
+                            newState = DeviceState.NoTracker;
                             break;
                         case "parking":
-                            newState = DeviceState.PARKING;
+                            newState = DeviceState.Parking;
                             break;
                     }
                     if (device.State != newState) {onStateChanged.Invoke(newState);

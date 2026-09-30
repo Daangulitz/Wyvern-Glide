@@ -41,15 +41,14 @@ public class SimpleFlight : MonoBehaviour
 
     private MotionCompensation _motionCompensation;
 
-    void Reset()
+    private void Reset()
     {
         rb = GetComponent<Rigidbody>();
     }
 
-    void OnEnable()
+    private void OnEnable()
     {
-        if (controllerRotationAction != null)
-            controllerRotationAction.action.Enable();
+        if (controllerRotationAction != null) controllerRotationAction.action.Enable();
 
         if (calibrateAction != null)
         {
@@ -58,10 +57,9 @@ public class SimpleFlight : MonoBehaviour
         }
     }
 
-    void OnDisable()
+    private void OnDisable()
     {
-        if (controllerRotationAction != null)
-            controllerRotationAction.action.Disable();
+        if (controllerRotationAction != null) controllerRotationAction.action.Disable();
 
         if (calibrateAction != null)
         {
@@ -70,7 +68,7 @@ public class SimpleFlight : MonoBehaviour
         }
     }
 
-    void OnCalibratePerformed(InputAction.CallbackContext ctx)
+    private void OnCalibratePerformed(InputAction.CallbackContext ctx)
     {
         if (IsValidRotation(_currentControllerRotation))
         {
@@ -79,7 +77,7 @@ public class SimpleFlight : MonoBehaviour
         }
     }
 
-    void Start()
+    private void Start()
     {
         if (calibrateOnStart)
         {
@@ -87,28 +85,29 @@ public class SimpleFlight : MonoBehaviour
             _hasCalibrated = false;
         }
 
-        if (animator == null)
-            animator = GetComponent<Animator>();
+        if (animator == null) animator = GetComponent<Animator>();
         
         if (_motionCompensation == null)
-            _motionCompensation = FindObjectOfType<MotionCompensation>();
+        {
+            _motionCompensation = FindAnyObjectByType<MotionCompensation>();
             _motionCompensation.UpdateOffset();
+        }
     }
 
-    public void Calibrate()
+    private void Calibrate()
     {
         _calibrationRotation = _currentControllerRotation;
         _hasCalibrated = true;
     }
 
     // A genuine unit quaternion has (x²+y²+z²+w²) ≈ 1. Garbage/uninitialized tracking data won't.
-    bool IsValidRotation(Quaternion q)
+    private bool IsValidRotation(Quaternion q)
     {
         float sqrMag = q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w;
         return sqrMag > 0.9f && sqrMag < 1.1f;
     }
 
-    void FixedUpdate()
+    private void FixedUpdate()
     {
         if (rb == null || controllerRotationAction == null) return;
         if (_hasCalibrated == false) return; // don't move until we've calibrated
@@ -174,5 +173,7 @@ public class SimpleFlight : MonoBehaviour
 
         // no gravity fighting: pure forward-vector flight, level flight stays level
         rb.linearVelocity = transform.forward * currentSpeed;
+        
+        YawController.Instance.TrackerObject.SetRotation(transform.localEulerAngles);
     }
 }

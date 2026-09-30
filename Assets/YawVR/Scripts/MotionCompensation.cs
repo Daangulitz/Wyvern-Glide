@@ -28,7 +28,7 @@ namespace YawVR
 
         private void LateUpdate()
         {
-            if (YawController.Instance.State != ControllerState.Started) return;
+            if (YawController.Instance.State != ControllerState.Started || cameraOffsetTransform == null) return;
 
             simData.y = -yawController.Device.ActualPosition.yaw;
             Quaternion targetRotation = Quaternion.Euler(simData - offset);
