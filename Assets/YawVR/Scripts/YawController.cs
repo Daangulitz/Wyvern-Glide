@@ -2,9 +2,7 @@
 using UnityEngine;
 using System;
 using System.Net;
-using System.Threading;
 using System.Globalization;
-using System.Text.RegularExpressions;
 using System.Text;
 using System.Collections.Generic;
 using UnityEngine.Events;
@@ -430,12 +428,10 @@ namespace YawVR
             startIdx += 2;
             int endIdx = msg.IndexOf(']', startIdx);
             
-            if (endIdx != -1)
-            {
-                string valStr = msg.Substring(startIdx, endIdx - startIdx);
-                return float.TryParse(valStr, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
-            }
-            return false;
+            if (endIdx == -1) return false;
+            
+            ReadOnlySpan<char> valSpan = msg.AsSpan(startIdx, endIdx - startIdx);
+            return float.TryParse(valSpan, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
         }
 
         public void DidRecieveTCPMessage(byte[] data)
@@ -757,21 +753,39 @@ namespace YawVR
         }
 
         #region AutoConnect
+        private Coroutine discoveryCoroutine;
+
         private void AutoConnectFirst()
         {
             Debug.Log("-----------------------------DISCOVER---------------------------");
-            // starting a repeating call to YawController.Instance().DiscoverDevices(udpPort) with the help of a coroutine - calling continuously because udp packet may be lost
-            StartCoroutine(DeviceDiscoveryCoroutine());
-            // We receive device in the DidFoundDevice(YawDevice) method
+            discoveryCoroutine = StartCoroutine(DeviceDiscoveryCoroutine());
         }
 
         private IEnumerator DeviceDiscoveryCoroutine()
         {
+            for (int i = 0; i < 3 && state == ControllerState.Initial; i++)
+            {
+                DiscoverDevices(50010);
+                yield return new WaitForSeconds(0.2f);
+            }
+
             while (state == ControllerState.Initial)
             {
                 DiscoverDevices(50010);
+                yield return new WaitForSeconds(1f);
+            }
+        }
 
-                yield return new WaitForSeconds(1);
+        private void HandleAutoDiscoveredDevice(YawDevice device)
+        {
+            if (state == ControllerState.Initial && (device.Status == DeviceStatus.Available || device.Status == DeviceStatus.Unknown))
+            {
+                StopCoroutineSafe(ref discoveryCoroutine);
+                Debug.Log("-----------------------------CONNECT TO A DEVICE---------------------------");
+                ConnectToDevice(device, () =>
+                {
+                    Debug.Log("YAWCONTROLLER: connected");
+                }, (error) => { Debug.Log("kapcsolat error"); });
             }
         }
 
@@ -785,20 +799,6 @@ namespace YawVR
                 tcpCLient.BeginSend(new byte[] { CommandIds.GET_STATE });
                 tcpCLient.BeginSend(new byte[] { CommandIds.GET_TEMPS });
                 yield return wait;
-            }
-        }
-
-        // YawControllerDelegate functions
-        private void HandleAutoDiscoveredDevice(YawDevice device)
-        {
-            //    Debug.Log("Did found device: " + device.Name);
-            if (state == ControllerState.Initial && (device.Status == DeviceStatus.Available || device.Status == DeviceStatus.Unknown))
-            {
-                Debug.Log("-----------------------------CONNECT TO A DEVICE---------------------------");
-                ConnectToDevice(device, () =>
-                {
-                    Debug.Log("YAWCONTROLLER: connected");
-                }, (error) => { Debug.Log("kapcsolat error"); });
             }
         }
         #endregion

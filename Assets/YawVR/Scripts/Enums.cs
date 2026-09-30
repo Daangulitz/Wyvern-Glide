@@ -18,11 +18,6 @@
         Available, Reserved, Unknown
     }
 
-    public enum Result
-    {
-        Success, Error
-    }
-
     /// <summary>
     /// The controller's inner state
     /// </summary>

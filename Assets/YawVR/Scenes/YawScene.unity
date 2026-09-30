@@ -849,6 +849,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 122ceaff37c9a9045859e2c7782a21f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::YawVR.StartYaw
+  startDelay: 3
 --- !u!1001 &2003287045
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -915,7 +916,7 @@ PrefabInstance:
       objectReference: {fileID: 199116397}
     - target: {fileID: 114097211993025946, guid: b2db00cc4030f47faad8506c631645eb, type: 3}
       propertyPath: connectType
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 114097211993025946, guid: b2db00cc4030f47faad8506c631645eb, type: 3}
       propertyPath: udpClientPort

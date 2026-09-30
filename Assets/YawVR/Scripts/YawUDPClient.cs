@@ -50,14 +50,9 @@ namespace YawVR
 
         public void StartListening()
         {
-            if (udpClient == null)
-            {
-                InitializeUdpClient();
-            }
-
-            cts?.Cancel();
+            StopListening();
+            InitializeUdpClient();
             cts = new CancellationTokenSource();
-
             _ = ReceiveLoopAsync(cts.Token);
         }
 
@@ -86,8 +81,11 @@ namespace YawVR
 
         private async Task ReceiveLoopAsync(CancellationToken token)
         {
-            while (!token.IsCancellationRequested && udpClient != null)
+            while (!token.IsCancellationRequested)
             {
+                var client = udpClient;
+                if (client == null) break;
+
                 try
                 {
                     UdpReceiveResult result = await udpClient.ReceiveAsync();
@@ -104,18 +102,8 @@ namespace YawVR
                         });
                     }
                 }
-                catch (ObjectDisposedException)
-                {
-                    break;
-                }
-                catch (NullReferenceException) when (token.IsCancellationRequested || udpClient == null)
-                {
-                    break;
-                }
-                catch (SocketException) when (token.IsCancellationRequested)
-                {
-                    break;
-                }
+                catch (ObjectDisposedException) { break; }
+                catch (SocketException) when (token.IsCancellationRequested) { break; }
                 catch (Exception err)
                 {
                     Debug.LogError($"[YawUDPClient] Error receiving UDP packet: {err.Message}");
@@ -144,7 +132,7 @@ namespace YawVR
 
             try
             {
-                udpClient.Send(data, data.Length, remoteEndPoint);
+                _ = udpClient.Send(data, data.Length, remoteEndPoint);
             }
             catch (Exception err)
             {
