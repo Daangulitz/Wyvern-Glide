@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using YawVR;
 
 [RequireComponent(typeof(Rigidbody))]
 public class SimpleFlight : MonoBehaviour
@@ -37,6 +38,8 @@ public class SimpleFlight : MonoBehaviour
     private Quaternion _currentControllerRotation = Quaternion.identity;
     private bool _hasCalibrated = false;
     private bool _pendingCalibration = false;
+
+    private MotionCompensation _motionCompensation;
 
     void Reset()
     {
@@ -86,6 +89,10 @@ public class SimpleFlight : MonoBehaviour
 
         if (animator == null)
             animator = GetComponent<Animator>();
+        
+        if (_motionCompensation == null)
+            _motionCompensation = FindObjectOfType<MotionCompensation>();
+            _motionCompensation.UpdateOffset();
     }
 
     public void Calibrate()
@@ -115,10 +122,6 @@ public class SimpleFlight : MonoBehaviour
             Calibrate();
             _pendingCalibration = false;
         }
-
-        // debug: dragon active only once we're actually cleared to move
-        if (debugDragon != null)
-            debugDragon.SetActive(_hasCalibrated && poseIsValid);
 
         // don't move at all until we've calibrated against a real, valid pose
         if (!_hasCalibrated || !poseIsValid)
