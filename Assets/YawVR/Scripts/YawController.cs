@@ -136,6 +136,8 @@ namespace YawVR
     public class YawController : MonoBehaviour, IYawControllerType, IYawTCPClientDelegate, IYawUDPClientDelegate
     {
         private static YawController instance;
+        public static YawController Instance => instance != null ? instance : throw new Exception("[YawController] Please drag YawController prefab into your scene.");
+
         public static List<Action> OnConnectReceivers = new();
 
         private YawTCPClient tcpCLient;
@@ -152,14 +154,6 @@ namespace YawVR
         private YawTracker yawTracker;
 
         #region PROPERTIES
-        public static YawController Instance
-        {
-            get
-            {
-                if (instance == null) throw new Exception("[YawController] Please drag YawController prefab into your scene.");
-                return instance;
-            }
-        }
 
         public YawTracker TrackerObject => yawTracker;
         public ControllerState State => state;
