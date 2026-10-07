@@ -133,6 +133,7 @@ namespace YawVR
     [Serializable]
     public class StateChangeEvent : UnityEvent<DeviceState> { }
 
+    //[DefaultExecutionOrder(-100)]
     public class YawController : MonoBehaviour, IYawControllerType, IYawTCPClientDelegate, IYawUDPClientDelegate
     {
         private static YawController instance;
@@ -166,8 +167,6 @@ namespace YawVR
 
         [SerializeField] private Transform referenceTransform; // we will copy this objects rotation, and send it to the sim
         [SerializeField] private string gameName; // name of the game
-        [SerializeField] private ConnectType connectType; // connect type, for debug purposes
-        [SerializeField] private string debug_ipAddress; // ip to connect in debug mode
         [SerializeField] private int udpClientPort;
 
         private OVector referenceRotation; // the rotation of the YAWTracker
@@ -184,6 +183,9 @@ namespace YawVR
         [SerializeField] private UnityEvent onConnected;
         [SerializeField] private UnityEvent onDisconnected;
         [SerializeField] private StateChangeEvent onStateChanged;
+
+        public event Action<YawDevice> DeviceDiscovered;
+        public event Action<ControllerState> StateChanged;
 
         private void Awake()
         {
@@ -214,16 +216,6 @@ namespace YawVR
             udpClient.StartListening();
 
             Debug.Log("[YawController] Initialized");
-        }
-
-        private void Start()
-        {
-            if (connectType == ConnectType.ConnectFirstFoundDevice) AutoConnect();
-
-            if (connectType == ConnectType.DebugConnectToIp)
-            {
-                ConnectToDevice(new YawDevice(IPAddress.Parse(debug_ipAddress), 50020, 50010, "001", "DEBUG", DeviceStatus.Available), null, null);
-            }
         }
 
         private void FixedUpdate()
@@ -405,10 +397,7 @@ namespace YawVR
 
                     Debug.Log("[YawController] Found device: " + yawDevice.Name);
 
-                    if (connectType == ConnectType.ConnectFirstFoundDevice)
-                    {
-                        HandleAutoDiscoveredDevice(yawDevice);
-                    }
+                    DeviceDiscovered?.Invoke(yawDevice);
                 }
             }
         }
@@ -688,6 +677,7 @@ namespace YawVR
             {
                 ControllerDelegate.ControllerStateChanged(newState);
             }
+            StateChanged?.Invoke(newState);
         }
 
         private IEnumerator ResponseTimeout(Action<string> onError)
@@ -745,41 +735,6 @@ namespace YawVR
             public Coroutine tcpConnectionAttemptTimeout;
         }
 
-        #region AutoConnect
-        private Coroutine discoveryCoroutine;
-
-        private void AutoConnect()
-        {
-            discoveryCoroutine = StartCoroutine(DeviceDiscoveryCoroutine());
-        }
-
-        private IEnumerator DeviceDiscoveryCoroutine()
-        {
-            for (int i = 0; i < 3 && state == ControllerState.Initial; i++)
-            {
-                DiscoverDevices(50010);
-                yield return new WaitForSeconds(0.2f);
-            }
-
-            while (state == ControllerState.Initial)
-            {
-                DiscoverDevices(50010);
-                yield return new WaitForSeconds(1f);
-            }
-        }
-
-        private void HandleAutoDiscoveredDevice(YawDevice device)
-        {
-            if (state == ControllerState.Initial && (device.Status == DeviceStatus.Available || device.Status == DeviceStatus.Unknown))
-            {
-                StopCoroutineSafe(ref discoveryCoroutine);
-                ConnectToDevice(device, () =>
-                {
-                    StartDevice();
-                }, (error) => { Debug.Log("[YawController] connection error"); });
-            }
-        }
-
         private IEnumerator DeviceHeartbeat()
         {
             WaitForSeconds wait = new WaitForSeconds(1f);
@@ -792,6 +747,5 @@ namespace YawVR
                 yield return wait;
             }
         }
-        #endregion
     }
 }

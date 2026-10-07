@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2749440082180570215}
+  - component: {fileID: 6192701007384539618}
   - component: {fileID: 3034428390299711539}
   - component: {fileID: 807580340852869550}
   - component: {fileID: 2691790278495669495}
@@ -35,6 +36,21 @@ Transform:
   - {fileID: 5173860804027389908}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6192701007384539618
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3946064709733212036}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3016ca5fe6150b819a7a97147096dc71, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::YawVR.YawDeviceConnector
+  connectType: 0
+  debugIpAddress: 
+  startOnConnect: 1
 --- !u!114 &3034428390299711539
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -64,9 +80,7 @@ MonoBehaviour:
     temps: 
     State: 0
   referenceTransform: {fileID: 5173860804027389908}
-  gameName: YawVR Unity Sample
-  connectType: 0
-  debug_ipAddress: 10.17.34.230
+  gameName: Wyvern-Glide
   udpClientPort: 50050
   rotationMultiplier: {x: 1, y: 1, z: 1}
   gameLimits:
