@@ -1,19 +1,19 @@
 using UnityEngine;
 
-public class HiddenCheckpoint : MonoBehaviour
+public class Checkpoints : MonoBehaviour
 {
-    private Finish finish;
+    private GameManager GM;
 
     private void Start()
     {
-        finish = FindObjectOfType<Finish>();
+        GM = FindObjectOfType<GameManager>();
     }
 
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
         {
-            finish.UpdateCheckpointCount();
+            GM.UpdateCheckpointCount();
         }
     }
 }

@@ -8,8 +8,9 @@ public class GameManager : MonoBehaviour
     [Header("Game variables that need to be sent to the Database")]
     public static float BestTime = 0f;
 
-    [Header("Objects that need to be set in the inspector")]
-    [SerializeField] private TextMeshProUGUI BestTimeText;
+    public static int CurrentCheckpointCount = 0;
+
+    public static int TotalCheckpointCount = 8;
 
     private void Awake()
     {
@@ -27,6 +28,10 @@ public class GameManager : MonoBehaviour
     public void UpdateBestTime(float newBestTime)
     {
         BestTime = newBestTime;
-        BestTimeText.text = "Best: " + BestTime.ToString("F2") + "s";
+    }
+
+    public void UpdateCheckpointCount()
+    {
+        CurrentCheckpointCount++;
     }
 }

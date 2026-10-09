@@ -5,10 +5,6 @@ public class Finish : MonoBehaviour
     private static Finish instance;
     private float finishTime;
 
-    public int CurrentCheckpointCount{private get; set;} = 0;
-
-    private int TotalCheckpointCount = 0;
-
         private void Awake()
     {
         if (instance == null)
@@ -22,11 +18,6 @@ public class Finish : MonoBehaviour
         }
     }
 
-    private void Start()
-    {
-        TotalCheckpointCount = GameObject.FindGameObjectsWithTag("Checkpoint").Length;
-    }
-
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
@@ -35,10 +26,5 @@ public class Finish : MonoBehaviour
             GameManager.instance.UpdateBestTime(finishTime);
             Timer.StopTimer();
         }
-    }
-
-    public void UpdateCheckpointCount()
-    {
-        CurrentCheckpointCount++;
     }
 }
