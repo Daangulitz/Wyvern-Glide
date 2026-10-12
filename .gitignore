@@ -104,3 +104,26 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# Frontend dependencies
+Frontend/node_modules/
+
+# Frontend build output
+Frontend/dist/
+
+# Lokale omgevingsvariabelen en geheimen
+.env
+.env.*
+!.env.example
+Frontend/.env
+Frontend/.env.*
+!Frontend/.env.example
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS bestanden
+.DS_Store
+Thumbs.db

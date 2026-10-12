@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum GameSessionStatus {
+  ACTIVE
+  FINISHED
+}
+
+model Client {
+  id           Int           @id @default(autoincrement())
+  name         String
+
+  admins       Admin[]
+  players      Player[]
+  games        Game[]
+  gameSessions GameSession[]
+}
+
+model Admin {
+  id           Int    @id @default(autoincrement())
+  username     String @unique
+  passwordHash String
+  clientId     Int
+
+  client       Client @relation(fields: [clientId], references: [id])
+}
+
+model Player {
+  id           Int           @id @default(autoincrement())
+  name         String
+  clientId     Int
+
+  client       Client        @relation(fields: [clientId], references: [id])
+  gameSessions GameSession[]
+}
+
+model Game {
+  id           Int     @id @default(autoincrement())
+  name         String
+  clientId     Int
+  isOnline     Boolean @default(false)
+  usesScore    Boolean @default(true)
+
+  client       Client        @relation(fields: [clientId], references: [id])
+  gameSessions GameSession[]
+}
+
+model GameSession {
+  id        Int               @id @default(autoincrement())
+  clientId  Int
+  playerId  Int
+  gameId    Int
+  startedAt DateTime          @default(now())
+  endedAt   DateTime?
+  status    GameSessionStatus @default(ACTIVE)
+
+  client    Client            @relation(fields: [clientId], references: [id])
+  player    Player            @relation(fields: [playerId], references: [id])
+  game      Game              @relation(fields: [gameId], references: [id])
+  result    GameResult?
+}
+
+model GameResult {
+  id        Int      @id @default(autoincrement())
+  sessionId Int      @unique
+  score     Int?
+  time      Float
+  createdAt DateTime @default(now())
+
+  session   GameSession @relation(fields: [sessionId], references: [id])
+}
