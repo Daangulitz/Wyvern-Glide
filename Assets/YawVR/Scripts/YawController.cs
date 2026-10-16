@@ -133,7 +133,7 @@ namespace YawVR
     [Serializable]
     public class StateChangeEvent : UnityEvent<DeviceState> { }
 
-    //[DefaultExecutionOrder(-100)]
+    [DefaultExecutionOrder(-100)]
     public class YawController : MonoBehaviour, IYawControllerType, IYawTCPClientDelegate, IYawUDPClientDelegate
     {
         private static YawController instance;
