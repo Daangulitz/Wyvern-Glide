@@ -43,6 +43,6 @@ app.get("/test/secure", authMiddleware, (request, response) => {
 app.use("/clients", clientRoutes);
 app.use("/auth", authRoutes);
 
-app.listen(port, () => {
-    console.log(`API gestart op http://localhost:${port}`);
+app.listen(port, "0.0.0.0",  () => {
+    console.log(`API gestart op poort ${port}`);
 });

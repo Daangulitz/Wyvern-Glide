@@ -1,13 +1,82 @@
 import { Router } from "express";
 import prisma from "./prisma.js";
+import jwt from "jsonwebtoken";
+import playerAuthMiddleware from "./playerAuthMiddleware.js";
 
 const router = Router();
 
-router.post("/start", async (request, response) => {
+router.post("/access", async (request, response) => {
     try {
-        const { name, gameId, clientId } = request.body;
+        const { gameKey, password } = request.body;
 
-        if (!name || !gameId || !clientId) {
+        if (!gameKey || !password) {
+            response.status(400).json({
+                message: "Game en wachtwoord zijn verplicht.",
+            });
+            return;
+        }
+
+        let correctPassword: string | undefined;
+        let clientId: number;
+        let gameId: number;
+
+        if (gameKey === "game1") {
+            correctPassword = process.env.PLAYER_GAME1_PASSWORD;
+            clientId = 1;
+            gameId = 1;
+        } else if (gameKey === "game2") {
+            correctPassword = process.env.PLAYER_GAME2_PASSWORD;
+            clientId = 2;
+            gameId = 2;
+        } else {
+            response.status(404).json({
+                message: "Game niet gevonden.",
+            });
+            return;
+        }
+
+        if (password !== correctPassword) {
+            response.status(401).json({
+                message: "Ongeldig wachtwoord.",
+            });
+            return;
+        }
+
+        const token = jwt.sign(
+            {
+                type: "player",
+                clientId,
+                gameId,
+            },
+            process.env.JWT_SECRET!,
+            {
+                expiresIn: "8h",
+            }
+        );
+
+        response.json({
+            token,
+        });
+    } catch (error) {
+        console.error(error);
+
+        response.status(500).json({
+            message: "Toegang kon niet worden gecontroleerd.",
+        });
+    }
+});
+
+router.post("/start", playerAuthMiddleware, async (request, response) => {
+    try {
+        const { 
+		name, 
+		leaderboardNumber, 
+	} = request.body;
+
+	const clientId = request.playerClientId;
+	const gameId = request.playerGameId;
+
+        if (!name || !gameId || !clientId || !leaderboardNumber) {
             response.status(400).json({
                 message: "Naam, gameId en clientId zijn verplicht.",
             });
@@ -27,6 +96,20 @@ router.post("/start", async (request, response) => {
             });
             return;
         }
+
+	const leaderboard = await prisma.leaderboard.findFirst({
+   		 where: {
+       			 gameId: game.id,
+       			 number: leaderboardNumber,
+   		 },
+	});
+
+	if (!leaderboard) {
+    		response.status(404).json({
+        	message: "Leaderboard niet gevonden.",
+   	 });	
+    	return;
+	}
 
         if (!game.isOnline) {
             response.status(409).json({
@@ -61,6 +144,7 @@ router.post("/start", async (request, response) => {
                 clientId,
                 playerId: player.id,
                 gameId: game.id,
+		leaderboardId: leaderboard.id,
             },
         });
 

@@ -13,6 +13,8 @@ router.get("/", authMiddleware, async (request, response) => {
             include: {
                 player: true,
                 result: true,
+		game: true,
+		leaderboard: true,
             },
         });
 
