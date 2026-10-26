@@ -66,6 +66,92 @@ router.post("/access", async (request, response) => {
     }
 });
 
+router.post("/start-guest", playerAuthMiddleware, async (request, response) => {
+    try {
+        const clientId = request.playerClientId;
+        const gameId = request.playerGameId;
+        const { leaderboardNumber } = request.body;
+
+        if (!gameId || !clientId || !leaderboardNumber) {
+            response.status(400).json({
+                message: "Game en leaderboard zijn verplicht.",
+            });
+            return;
+        }
+
+        const game = await prisma.game.findFirst({
+            where: {
+                id: gameId,
+                clientId,
+            },
+        });
+
+        if (!game) {
+            response.status(404).json({
+                message: "Game niet gevonden.",
+            });
+            return;
+        }
+
+        const leaderboard = await prisma.leaderboard.findFirst({
+            where: {
+                gameId: game.id,
+                number: leaderboardNumber,
+            },
+        });
+
+        if (!leaderboard) {
+            response.status(404).json({
+                message: "Leaderboard niet gevonden.",
+            });
+            return;
+        }
+
+        if (!game.isOnline) {
+            response.status(409).json({
+                message: "Deze game is momenteel offline.",
+            });
+            return;
+        }
+
+        const activeSession = await prisma.gameSession.findFirst({
+            where: {
+                clientId,
+                status: "ACTIVE",
+            },
+        });
+
+        if (activeSession) {
+            response.status(409).json({
+                message: "Er is al iemand aan het spelen.",
+            });
+            return;
+        }
+
+        const gameSession = await prisma.gameSession.create({
+            data: {
+                clientId,
+                playerId: null,
+                gameId: game.id,
+                leaderboardId: leaderboard.id,
+            },
+        });
+
+        response.status(201).json({
+            message: "Gastsessie gestart.",
+            gameSession,
+            game,
+            isGuest: true,
+        });
+    } catch (error) {
+        console.error(error);
+
+        response.status(500).json({
+            message: "Gastsessie kon niet worden gestart.",
+        });
+    }
+});
+
 router.post("/start", playerAuthMiddleware, async (request, response) => {
     try {
         const { 
@@ -125,12 +211,18 @@ router.post("/start", playerAuthMiddleware, async (request, response) => {
             },
         });
 
+        console.log("Actieve sessiecontrole:", {
+            clientId,
+            activeSession,
+        });
+
         if (activeSession) {
             response.status(409).json({
                 message: "Er is al een speler actief. Wacht tot de huidige speler klaar is.",
             });
             return;
         }
+
 
         const player = await prisma.player.create({
             data: {
@@ -194,15 +286,17 @@ router.get("/active", async (request, response) => {
 
         response.json({
             sessionId: activeSession.id,
-            playerId: activeSession.playerId,
+            playerId: activeSession.playerId ?? 0,
+            name: activeSession.player?.name ?? "Gast",
+            isGuest: activeSession.playerId === null,
             gameId: activeSession.gameId,
-            name: activeSession.player.name,
             game: {
                 id: activeSession.game.id,
                 name: activeSession.game.name,
                 usesScore: activeSession.game.usesScore,
             },
         });
+
     } catch (error) {
         console.error(error);
 

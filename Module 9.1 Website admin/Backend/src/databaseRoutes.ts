@@ -39,6 +39,28 @@ router.post("/test", authMiddleware, async (request, response) => {
             return;
         }
 
+        const game = await prisma.game.findFirst({
+            where: { clientId },
+        });
+
+        if (!game) {
+            response.status(404).json({
+                message: "Er is geen game gevonden voor deze client.",
+            });
+            return;
+        }
+
+        const leaderboard = await prisma.leaderboard.findFirst({
+            where: { gameId: game.id },
+        });
+
+        if (!leaderboard) {
+            response.status(404).json({
+                message: "Er is geen leaderboard gevonden voor deze game.",
+            });
+            return;
+        }
+
         const player = await prisma.player.create({
             data: {
                 name: "Test Player",
@@ -50,6 +72,8 @@ router.post("/test", authMiddleware, async (request, response) => {
             data: {
                 clientId,
                 playerId: player.id,
+                gameId: game.id,
+                leaderboardId: leaderboard.id,
             },
         });
 

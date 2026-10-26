@@ -65,7 +65,7 @@ model Leaderboard {
 model GameSession {
   id        Int               @id @default(autoincrement())
   clientId  Int
-  playerId  Int
+  playerId  Int?
   gameId    Int
   leaderboardId Int
   startedAt DateTime          @default(now())
@@ -73,7 +73,7 @@ model GameSession {
   status    GameSessionStatus @default(ACTIVE)
 
   client    Client            @relation(fields: [clientId], references: [id])
-  player    Player            @relation(fields: [playerId], references: [id])
+  player    Player?           @relation(fields: [playerId], references: [id])
   game      Game              @relation(fields: [gameId], references: [id])
   leaderboard Leaderboard     @relation(fields: [leaderboardId], references: [id])
   result    GameResult?
