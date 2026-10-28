@@ -255,6 +255,12 @@ router.post("/start", playerAuthMiddleware, async (request, response) => {
     }
 });
 
+router.get("/verify-access", playerAuthMiddleware, (request, response) => {
+    response.status(200).json({
+        valid: true,
+    });
+});
+
 router.get("/active", async (request, response) => {
     try {
         const clientId = Number(request.query.clientId);

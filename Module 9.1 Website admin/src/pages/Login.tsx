@@ -33,7 +33,7 @@ function Login() {
                 return;
             }
 
-            localStorage.setItem("token", data.token);
+            sessionStorage.setItem("token", data.token);
 
             navigate("/live");
         } catch (error) {

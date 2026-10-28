@@ -61,7 +61,7 @@ function Database() {
     }, []);
 
     async function fetchDatabase() {
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
 
         const response = await fetch(`${API_BASE_URL}/database`, {
             headers: {
@@ -219,27 +219,30 @@ function Database() {
                                 </TableRow>
                             </TableHeader>
 
-                            <TableBody>
-                                {selectedGameSessions.map((gameSession, index) => (
-                                    <TableRow key={gameSession.id}>
-                                        <TableCell>{index + 1}</TableCell>
-                                        <TableCell>{gameSession.player.id}</TableCell>
-                                        <TableCell>{gameSession.player.name}</TableCell>
+                                <TableBody>
+                                    {selectedGameSessions.map((gameSession, index) => (
+                                        <TableRow key={gameSession.id}>
+                                            <TableCell>{index + 1}</TableCell>
+                                            <TableCell>{gameSession.player?.id ?? "-"}</TableCell>
+                                            <TableCell>{gameSession.player?.name ?? "Gast"}</TableCell>
+
                                             {gameSession.game.usesScore && (
                                                 <TableCell>
                                                     {gameSession.result?.score ?? "-"}
                                                 </TableCell>
                                             )}
-                                        <TableCell>
-                                            {gameSession.result
-                                                ? gameSession.result.time
-                                                    .toFixed(3)
-                                                    .replace(".", ",")
-                                                : "-"}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
+
+                                            <TableCell>
+                                                {gameSession.result
+                                                    ? gameSession.result.time
+                                                        .toFixed(3)
+                                                        .replace(".", ",")
+                                                    : "-"}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+
                         </Table>
                     </div>
                 </>

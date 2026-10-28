@@ -54,13 +54,61 @@ function PlayerAccess({
               focus: "focus:border-red-400 focus:ring-red-400/20",
           };
 
-    useEffect(() => {
+useEffect(() => {
+    let cancelled = false;
+
+    async function verifyAccess() {
         const token = localStorage.getItem(`playerToken-${gameKey}`);
 
-        if (token) {
-            setHasAccess(true);
+        if (!token) {
+            setHasAccess(false);
+            return;
         }
-    }, [gameKey]);
+
+        try {
+            const response = await fetch(
+                `${API_BASE_URL}/player/verify-access`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (cancelled) {
+                return;
+            }
+
+            if (response.ok) {
+                setHasAccess(true);
+                return;
+            }
+
+            if (response.status === 401) {
+                localStorage.removeItem(`playerToken-${gameKey}`);
+                setHasAccess(false);
+                setMessage("Je toegang is verlopen. Voer het wachtwoord opnieuw in.");
+                return;
+            }
+
+            setHasAccess(false);
+            setMessage("De toegang kon niet worden gecontroleerd. Probeer het opnieuw.");
+        } catch (error) {
+            console.error("Toegang controleren mislukt:", error);
+
+            if (!cancelled) {
+                setHasAccess(false);
+                setMessage("Geen verbinding met de server. Controleer je verbinding en vernieuw de pagina.");
+            }
+        }
+    }
+
+    verifyAccess();
+
+    return () => {
+        cancelled = true;
+    };
+}, [gameKey]);
 
     useEffect(() => {
         if (!hasAccess) {
@@ -106,6 +154,13 @@ function PlayerAccess({
                 }
             }
         }
+        
+        function handleExpiredToken() {
+            localStorage.removeItem(`playerToken-${gameKey}`);
+            setHasAccess(false);
+            setMessage("Je toegang is verlopen. Voer het wachtwoord opnieuw in.");
+        }
+
 
         checkActiveSession();
 
@@ -140,6 +195,12 @@ function PlayerAccess({
             );
 
             const data = await response.json();
+            
+            if (response.status === 401) {
+                handleExpiredToken();
+                return;
+            }
+
 
             if (!response.ok) {
                 setMessage(data.message);

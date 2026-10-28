@@ -12,7 +12,7 @@ import {
 
 type ActivePlayer = {
     sessionId: number;
-    playerId: number;
+    playerId: number | null;
     gameId: number;
     name: string;
     game: {
@@ -39,6 +39,11 @@ type RankingData = {
     results: RankingResult[];
 };
 
+type LiveData = {
+    activePlayer: ActivePlayer | null;
+    ranking: RankingData;
+};
+
 function formatTime(time: number | null) {
     if (time === null) {
         return "-";
@@ -62,46 +67,40 @@ function Live() {
     const [error, setError] = useState("");
     const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
-    const clientId = 1;
-    const leaderboardNumber = 1;
-    const gameId = activePlayer?.gameId ?? 1;
-
     useEffect(() => {
         let isMounted = true;
 
         async function loadData() {
+            const token = sessionStorage.getItem("token");
+
+            if (!token) {
+                if (isMounted) {
+                    setError("Je bent niet ingelogd. Log opnieuw in.");
+                }
+                return;
+            }
+
             try {
-                const activeResponse = await fetch(
-                    `${API_BASE_URL}/player/active?clientId=${clientId}`
-                );
+                const response = await fetch(`${API_BASE_URL}/game/live`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
 
-                let active: ActivePlayer | null = null;
+                const data = await response.json();
 
-                if (activeResponse.ok) {
-                    active = await activeResponse.json();
-                } else if (activeResponse.status !== 404) {
-                    throw new Error("Actieve speler kon niet worden opgehaald.");
+                if (!response.ok) {
+                    throw new Error(
+                        data.message ?? "Livegegevens konden niet worden opgehaald."
+                    );
                 }
+
+                const liveData: LiveData = data;
 
                 if (!isMounted) return;
 
-                setActivePlayer(active);
-
-                const currentGameId = active?.gameId ?? 1;
-
-                const rankingResponse = await fetch(
-                    `${API_BASE_URL}/game/ranking?gameId=${currentGameId}&leaderboardNumber=${leaderboardNumber}`
-                );
-
-                if (!rankingResponse.ok) {
-                    throw new Error("Ranking kon niet worden opgehaald.");
-                }
-
-                const rankingData: RankingData = await rankingResponse.json();
-
-                if (!isMounted) return;
-
-                setRanking(rankingData);
+                setActivePlayer(liveData.activePlayer);
+                setRanking(liveData.ranking);
                 setError("");
                 setLastUpdate(new Date());
             } catch (error) {
@@ -134,7 +133,7 @@ function Live() {
                 </p>
             </div>
 
-            <div className="rounded-md border p-4 space-y-3">
+            <div className="space-y-3 rounded-md border p-4">
                 <div className="flex items-center justify-between gap-3">
                     <h2 className="text-xl font-semibold">Actieve speler</h2>
 
@@ -148,9 +147,11 @@ function Live() {
                         <p className="text-2xl font-bold">
                             {activePlayer.name}
                         </p>
-                        <p className="text-sm text-muted-foreground">
-                            Speler ID: {activePlayer.playerId}
-                        </p>
+                        {activePlayer.playerId !== null && (
+                            <p className="text-sm text-muted-foreground">
+                                Speler ID: {activePlayer.playerId}
+                            </p>
+                        )}
                         <p className="text-sm text-muted-foreground">
                             {activePlayer.game.name} · Sessie #
                             {activePlayer.sessionId}
