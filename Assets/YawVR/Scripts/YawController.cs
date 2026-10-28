@@ -134,7 +134,7 @@ namespace YawVR
     public class StateChangeEvent : UnityEvent<DeviceState> { }
 
     [DefaultExecutionOrder(-100)]
-    public class YawController : MonoBehaviour, IYawControllerType, IYawTCPClientDelegate, IYawUDPClientDelegate
+    public partial class YawController : MonoBehaviour, IYawControllerType, IYawTCPClientDelegate, IYawUDPClientDelegate
     {
         private static YawController instance;
         public static YawController Instance => instance != null ? instance : throw new Exception("[YawController] Please drag YawController prefab into your scene.");
@@ -215,6 +215,8 @@ namespace YawVR
 
             udpClient.StartListening();
 
+            if (useRustServer) RustAwake(); // Rust yawvr-server, see YawController.RustServer.cs
+
             Debug.Log("[YawController] Initialized");
         }
 
@@ -241,6 +243,7 @@ namespace YawVR
 
             tcpCLient?.CloseConnection();
             udpClient?.StopListening();
+            RustShutdown(); // Rust yawvr-server, see YawController.RustServer.cs
 
             instance = null;
         }
@@ -260,12 +263,14 @@ namespace YawVR
 
         public void DiscoverDevices(int onPort)
         {
+            if (RustActive) { RustDiscoverDevices(onPort); return; } // Rust yawvr-server, see YawController.RustServer.cs
             discoveryPort = onPort;
             udpClient.SendBroadcast(onPort, Commands.DEVICE_DISCOVERY);
         }
 
         public void ConnectToDevice(YawDevice yawDevice, Action onSuccess, Action<string> onError)
         {
+            if (RustActive) { RustConnectToDevice(yawDevice, onSuccess, onError); return; } // Rust yawvr-server, see YawController.RustServer.cs
             if (state == ControllerState.Initial)
             {
                 SetState(ControllerState.Connecting);
@@ -318,6 +323,7 @@ namespace YawVR
 
         public void StartDevice(Action onSuccess = null, Action<string> onError = null)
         {
+            if (RustActive) { RustStartDevice(onSuccess, onError); return; } // Rust yawvr-server, see YawController.RustServer.cs
             if (state == ControllerState.Connected)
             {
                 callBacks.startSuccess = onSuccess;
@@ -331,6 +337,7 @@ namespace YawVR
 
         public void StopDevice(bool park, Action onSuccess = null, Action<string> onError = null)
         {
+            if (RustActive) { RustStopDevice(park, onSuccess, onError); return; } // Rust yawvr-server, see YawController.RustServer.cs
             if (state == ControllerState.Started)
             {
                 callBacks.stopSuccess = onSuccess;
@@ -344,6 +351,7 @@ namespace YawVR
 
         public void CalibrateDevice(bool allAxis)
         {
+            if (RustActive) { RustCalibrateDevice(allAxis); return; } // Rust yawvr-server, see YawController.RustServer.cs
             if (state == ControllerState.Connected)
             {
                 tcpCLient.BeginSend(new byte[2] { Commands.CALIBRATE[0], (byte)(allAxis ? 1 : 0) });
@@ -352,6 +360,7 @@ namespace YawVR
 
         public void DisconnectFromDevice(Action onSuccess, Action<string> onError)
         {
+            if (RustActive) { RustDisconnectFromDevice(onSuccess, onError); return; } // Rust yawvr-server, see YawController.RustServer.cs
             if (state != ControllerState.Initial)
             {
                 callBacks.exitSuccess = onSuccess;
@@ -633,11 +642,13 @@ namespace YawVR
         /// </summary>
         private void SendRotation(OVector rotation)
         {
+            if (RustActive) { RustSendRotation(rotation); return; } // Rust yawvr-server, see YawController.RustServer.cs
             udpClient.Send(Commands.MOTION_DATA(rotation.yaw, rotation.pitch, rotation.roll, buzzer, smartPlug));
         }
 
         public void SendLED(Color32[] colors)
         {
+            if (RustActive) { RustSendLED(colors); return; } // Rust yawvr-server, see YawController.RustServer.cs
             if (colors.Length != 129) return;
 
             udpClient.Send(Commands.UDP_LED_CMD(colors));
@@ -645,6 +656,7 @@ namespace YawVR
 
         public void SendLED(Color32 color)
         {
+            if (RustActive) { RustSendLED(color); return; } // Rust yawvr-server, see YawController.RustServer.cs
             udpClient.Send(Commands.UDP_LED_CMD(color));
         }
 
