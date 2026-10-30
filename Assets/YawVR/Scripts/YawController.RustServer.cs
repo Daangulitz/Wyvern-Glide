@@ -16,6 +16,10 @@
 //  - A lost link is detected (the old SDK could not): the rig parks by itself, the state goes to
 //    Connecting, and the connection comes back automatically. The motion then stays off until
 //    StartDevice() is called again, unless "Rust Restart After Reconnect" is ticked.
+//  - A latched emergency stop is cleared once per game start, on the first connection (owner's
+//    choice), never on a scene load or a reconnect. The server refuses it while the magnet is off.
+//    Latched faults alone are not cleared, but the same command also clears a fault latched
+//    together with the e-stop if its cause is gone.
 using System;
 using System.Net;
 using UnityEngine;
@@ -57,10 +61,21 @@ namespace YawVR
         private bool rustStopAccepted;
         private float rustCommandDeadline;
         private YawVR.Proto.State rustRigState = YawVR.Proto.State.Unspecified;
+        private bool rustClearPending;    // waiting for the game-start e-stop clear before finishing the connect
+        private uint rustClearId;
+        private bool rustClearAnswered;
+        private float rustClearDeadline;
+        private const float RustClearTimeout = 2f;
+        private static bool rustGameStartHandled; // process-wide: survives scene loads, reset at every game start
         private Color32 rustLastLed;
         private float rustLastLedTime = -10f;
 
         // ------------------------------------------------------------------ lifecycle
+
+        // Runs at every game start and every Play in the Editor. Needed because this project has
+        // domain reload disabled, so a static would otherwise survive between Play sessions.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void RustResetGameStart() => rustGameStartHandled = false;
 
         private void RustAwake()
         {
@@ -134,6 +149,7 @@ namespace YawVR
             callBacks.connectingError = onError;
             rustEverConnected = false;
             rustWasStarted = false;
+            rustClearPending = false;
             rustConfig.ClientName = string.IsNullOrEmpty(gameName) ? "Unity" : gameName;
             SetState(ControllerState.Connecting);
             // Always the Rust server's port: devices from the old discovery or the debug IP carry 50010.
@@ -231,23 +247,21 @@ namespace YawVR
             {
                 case YawEventKind.Connected:
                     if (state != ControllerState.Connecting) break;
-                    bool reconnect = rustEverConnected;
-                    rustEverConnected = true;
-                    if (cancellation != null) Invoke(nameof(UpdateIMUOffset), 0.1f);
-                    foreach (Action a in OnConnectReceivers) a?.Invoke();
-                    onConnected?.Invoke();
-                    SetState(ControllerState.Connected);
-                    if (!reconnect)
+                    if (!rustGameStartHandled && e.State == YawVR.Proto.State.EmergencyStopped)
                     {
-                        Debug.Log("[YawController] Connected to " + (device != null ? device.Name : "?") + " (Rust yawvr-server)");
-                        RustSucceed(ref callBacks.connectingSuccess, ref callBacks.connectingError);
+                        // Clear first and report Connected only afterwards: a StartDevice sent now could
+                        // meet a stale "e-stopped" status, which would cancel it.
+                        rustClearId = rustSession.ClearEmergencyStop();
+                        if (rustClearId != 0)
+                        {
+                            Debug.LogWarning("[YawController] Game start: clearing the latched emergency stop");
+                            rustClearPending = true;
+                            rustClearAnswered = false;
+                            rustClearDeadline = Time.unscaledTime + RustClearTimeout;
+                            break;
+                        }
                     }
-                    else
-                    {
-                        Debug.Log("[YawController] Reconnected to the Rust yawvr-server" + (rustWasStarted ? (rustRestartAfterReconnect ? ": restarting the motion" : ": motion stays off until StartDevice()") : ""));
-                        if (rustRestartAfterReconnect && rustWasStarted) StartDevice();
-                    }
-                    rustWasStarted = false;
+                    RustFinishConnected();
                     break;
 
                 case YawEventKind.ConnectFailed:
@@ -260,6 +274,7 @@ namespace YawVR
                     break;
 
                 case YawEventKind.Disconnected:
+                    rustClearPending = false; // not resolved: the next connection tries again
                     // Our own Disconnect() calls are already handled where they were made.
                     if (state == ControllerState.Initial || (e.Message != null && e.Message.StartsWith(RustOwnDisconnect, StringComparison.Ordinal))) break;
                     onDisconnected?.Invoke();
@@ -280,12 +295,20 @@ namespace YawVR
 
                 case YawEventKind.CommandAccepted:
                     if (e.CommandId != 0 && e.CommandId == rustStopId) rustStopAccepted = true;
+                    if (rustClearPending && e.CommandId == rustClearId) rustClearAnswered = true;
                     break;
 
                 case YawEventKind.CommandRejected:
                     Debug.LogWarning("[YawController] " + e.CommandName + " rejected by the Rust yawvr-server: " + e.Reason + " " + e.Message);
                     bool startCmd = e.CommandId == rustStartId || (e.CommandId == 0 && e.CommandName == "Start");
                     bool stopCmd = e.CommandId == rustStopId || (e.CommandId == 0 && e.CommandName == "Stop");
+                    if (rustClearPending && e.CommandId == rustClearId)
+                    {
+                        // For example the magnet is still off: the rig stays stopped and Start will be refused.
+                        Debug.LogError("[YawController] The emergency stop could not be cleared at game start. Fix the cause and restart the game.");
+                        rustClearPending = false;
+                        RustFinishConnected();
+                    }
                     if (state == ControllerState.Starting && startCmd)
                     {
                         SetState(ControllerState.Connected);
@@ -327,9 +350,47 @@ namespace YawVR
             }
         }
 
+        private void RustFinishConnected()
+        {
+            rustGameStartHandled = true;
+            bool reconnect = rustEverConnected;
+            rustEverConnected = true;
+            if (cancellation != null) Invoke(nameof(UpdateIMUOffset), 0.1f);
+            foreach (Action a in OnConnectReceivers) a?.Invoke();
+            onConnected?.Invoke();
+            SetState(ControllerState.Connected);
+            if (!reconnect)
+            {
+                Debug.Log("[YawController] Connected to " + (device != null ? device.Name : "?") + " (Rust yawvr-server)");
+                RustSucceed(ref callBacks.connectingSuccess, ref callBacks.connectingError);
+            }
+            else
+            {
+                Debug.Log("[YawController] Reconnected to the Rust yawvr-server" + (rustWasStarted ? (rustRestartAfterReconnect ? ": restarting the motion" : ": motion stays off until StartDevice()") : ""));
+                if (rustRestartAfterReconnect && rustWasStarted) StartDevice();
+            }
+            rustWasStarted = false;
+        }
+
         /// <summary>Finishes Start/Stop when the rig gets there, notices motion stopping by itself, applies timeouts.</summary>
         private void RustCheckProgress()
         {
+            if (rustClearPending)
+            {
+                if (state != ControllerState.Connecting) rustClearPending = false;
+                else if (rustClearAnswered && rustSession.Model.Snapshot.ServerState != YawVR.Proto.State.EmergencyStopped)
+                {
+                    Debug.LogWarning("[YawController] Emergency stop cleared at game start");
+                    rustClearPending = false;
+                    RustFinishConnected();
+                }
+                else if (Time.unscaledTime > rustClearDeadline)
+                {
+                    Debug.LogError("[YawController] No answer to the emergency stop clear at game start: continuing");
+                    rustClearPending = false;
+                    RustFinishConnected();
+                }
+            }
             if (state == ControllerState.Starting && rustSession.IsStreaming)
             {
                 SetState(ControllerState.Started);
