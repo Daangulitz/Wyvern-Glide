@@ -3519,6 +3519,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2691790278495669495, guid: 24222eaa85fac5135a4f10f5b0148538, type: 3}
+      propertyPath: cameraOffsetTransform
+      value: 
+      objectReference: {fileID: 231743577}
     - target: {fileID: 2749440082180570215, guid: 24222eaa85fac5135a4f10f5b0148538, type: 3}
       propertyPath: m_LocalPosition.x
       value: 848.89636
@@ -7606,6 +7610,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5b84aae4ad2a642dd84b74e4a956aed6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DatabaseManager
+  clientId: 1
+  fetchOnStart: 1
+  timeoutSeconds: 10
+  retryCount: 2
+  retryDelaySeconds: 2
+  refreshWhenNoPlayer: 1
+  noPlayerRefreshSeconds: 5
+  verboseLogging: 1
 --- !u!4 &348726142
 Transform:
   m_ObjectHideFlags: 0
@@ -19330,7 +19342,7 @@ MonoBehaviour:
   m_VolumeTrigger: {fileID: 0}
   m_VolumeFrameworkUpdateModeOption: 2
   m_RenderPostProcessing: 1
-  m_Antialiasing: 0
+  m_Antialiasing: 2
   m_AntialiasingQuality: 2
   m_StopNaN: 0
   m_Dithering: 0
