@@ -222,50 +222,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
---- !u!1 &126360909
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 126360911}
-  - component: {fileID: 126360910}
-  m_Layer: 0
-  m_Name: RudpLoopbackTest
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &126360910
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 126360909}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 485a71123aa52d225a74ec1f25dfa31d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::YawVR.RudpLoopbackTest
---- !u!4 &126360911
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 126360909}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -2.19068, y: -4.33863, z: 5.87202}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &149306792 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2691790278495669495, guid: 24222eaa85fac5135a4f10f5b0148538, type: 3}
@@ -1616,14 +1572,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 3034428390299711539, guid: 24222eaa85fac5135a4f10f5b0148538, type: 3}
-      propertyPath: rustPassword
-      value: Yaw3-access
-      objectReference: {fileID: 0}
-    - target: {fileID: 3034428390299711539, guid: 24222eaa85fac5135a4f10f5b0148538, type: 3}
-      propertyPath: useRustServer
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 3946064709733212036, guid: 24222eaa85fac5135a4f10f5b0148538, type: 3}
       propertyPath: m_Name
       value: YawController
@@ -1644,4 +1592,3 @@ SceneRoots:
   - {fileID: 1649308669}
   - {fileID: 936758252}
   - {fileID: 98247589}
-  - {fileID: 126360911}
