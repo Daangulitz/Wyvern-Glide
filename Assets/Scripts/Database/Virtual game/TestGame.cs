@@ -81,10 +81,10 @@ public class TestGame : MonoBehaviour
     }
 }
 
-[System.Serializable]
-public class GameResultRequest
-{
-    public int sessionId;
-    public int score;
-    public float time;
-}
+//[System.Serializable]
+//public class GameResultRequest
+//{
+//     public int sessionId;
+//     public int score;
+//     public float time;
+// }

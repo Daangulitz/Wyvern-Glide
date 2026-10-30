@@ -25,6 +25,8 @@ public class Finish : MonoBehaviour
             finishTime = Timer.currentTime;
             GameManager.instance.UpdateBestTime(finishTime);
             Timer.StopTimer();
+            GameManager.instance.EndGame();
+            Debug.Log($"Finish bereikt! Tijd: {finishTime:F2} seconden");
         }
     }
 }
