@@ -251,11 +251,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 485a71123aa52d225a74ec1f25dfa31d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::YawVR.RudpLoopbackTest
-  host: 127.0.0.1
-  port: 50050
-  reliableCount: 3
-  unreliableCount: 100
-  unreliableIntervalMs: 20
 --- !u!4 &126360911
 Transform:
   m_ObjectHideFlags: 0
@@ -1620,6 +1615,14 @@ PrefabInstance:
     - target: {fileID: 2749440082180570215, guid: 24222eaa85fac5135a4f10f5b0148538, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3034428390299711539, guid: 24222eaa85fac5135a4f10f5b0148538, type: 3}
+      propertyPath: rustPassword
+      value: Yaw3-access
+      objectReference: {fileID: 0}
+    - target: {fileID: 3034428390299711539, guid: 24222eaa85fac5135a4f10f5b0148538, type: 3}
+      propertyPath: useRustServer
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3946064709733212036, guid: 24222eaa85fac5135a4f10f5b0148538, type: 3}
       propertyPath: m_Name
