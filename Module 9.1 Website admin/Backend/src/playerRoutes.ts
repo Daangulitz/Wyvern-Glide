@@ -70,11 +70,10 @@ router.post("/start-guest", playerAuthMiddleware, async (request, response) => {
     try {
         const clientId = request.playerClientId;
         const gameId = request.playerGameId;
-        const { leaderboardNumber } = request.body;
 
-        if (!gameId || !clientId || !leaderboardNumber) {
+        if (!gameId || !clientId) {
             response.status(400).json({
-                message: "Game en leaderboard zijn verplicht.",
+                message: "Game en clientId zijn verplicht.",
             });
             return;
         }
@@ -93,11 +92,15 @@ router.post("/start-guest", playerAuthMiddleware, async (request, response) => {
             return;
         }
 
+        // Haal automatisch de nieuwste ranglijst op
         const leaderboard = await prisma.leaderboard.findFirst({
             where: {
                 gameId: game.id,
-                number: leaderboardNumber,
             },
+            orderBy: [
+                { number: "desc" },
+                { id: "desc" },
+            ],
         });
 
         if (!leaderboard) {
@@ -154,15 +157,12 @@ router.post("/start-guest", playerAuthMiddleware, async (request, response) => {
 
 router.post("/start", playerAuthMiddleware, async (request, response) => {
     try {
-        const { 
-		name, 
-		leaderboardNumber, 
-	} = request.body;
+        const { name } = request.body;
 
-	const clientId = request.playerClientId;
-	const gameId = request.playerGameId;
+        const clientId = request.playerClientId;
+        const gameId = request.playerGameId;
 
-        if (!name || !gameId || !clientId || !leaderboardNumber) {
+        if (!name || !gameId || !clientId) {
             response.status(400).json({
                 message: "Naam, gameId en clientId zijn verplicht.",
             });
@@ -183,19 +183,23 @@ router.post("/start", playerAuthMiddleware, async (request, response) => {
             return;
         }
 
-	const leaderboard = await prisma.leaderboard.findFirst({
-   		 where: {
-       			 gameId: game.id,
-       			 number: leaderboardNumber,
-   		 },
-	});
+        // Haal automatisch de nieuwste ranglijst op
+        const leaderboard = await prisma.leaderboard.findFirst({
+            where: {
+                gameId: game.id,
+            },
+            orderBy: [
+                { number: "desc" },
+                { id: "desc" },
+            ],
+        });
 
-	if (!leaderboard) {
-    		response.status(404).json({
-        	message: "Leaderboard niet gevonden.",
-   	 });	
-    	return;
-	}
+        if (!leaderboard) {
+            response.status(404).json({
+                message: "Leaderboard niet gevonden.",
+            });
+            return;
+        }
 
         if (!game.isOnline) {
             response.status(409).json({
@@ -223,7 +227,6 @@ router.post("/start", playerAuthMiddleware, async (request, response) => {
             return;
         }
 
-
         const player = await prisma.player.create({
             data: {
                 name,
@@ -236,7 +239,7 @@ router.post("/start", playerAuthMiddleware, async (request, response) => {
                 clientId,
                 playerId: player.id,
                 gameId: game.id,
-		leaderboardId: leaderboard.id,
+                leaderboardId: leaderboard.id,
             },
         });
 
