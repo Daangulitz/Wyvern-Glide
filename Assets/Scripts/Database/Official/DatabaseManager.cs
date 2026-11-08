@@ -70,6 +70,19 @@ public class DatabaseManager : MonoBehaviour
         ActivePlayer = null;
     }
 
+    /// <summary>
+    /// Throws away the current player and starts asking the server for a new one
+    /// (it keeps asking every few seconds until a new active player shows up).
+    /// </summary>
+    public void ResetForNewPlayer()
+    {
+        StopAllCoroutines();
+        IsLoading = false;
+        ActivePlayer = null;
+        _noPlayerReported = false;
+        GetActivePlayer();
+    }
+
     private IEnumerator GetActivePlayerRequest()
     {
         IsLoading = true;

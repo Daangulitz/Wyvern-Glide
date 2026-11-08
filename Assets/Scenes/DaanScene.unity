@@ -56078,8 +56078,9 @@ MonoBehaviour:
   controllerRotationAction: {fileID: 5677774301284416954, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   calibrateOnStart: 0
   calibrateAction: {fileID: 1120369429361536294, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  calibrateButtonOnlyOnce: 1
   currentSpeed: 20
-  minSpeed: 10
+  minSpeed: 20
   maxSpeed: 50
   speedChangeRate: 10
   pitchInfluence: 1
@@ -56089,15 +56090,27 @@ MonoBehaviour:
   yawFromRoll: 20
   levelThresholdDeg: 5
   maxTiltAngle: 45
+  easyFlight: 1
+  invertPitch: 0
+  turnSpeed: 70
+  maxBankAngle: 45
+  maxPitchAngle: 60
+  autoLevelPitchSpeed: 20
+  inputDeadzone: 0.12
+  inputCurve: 1.4
+  inputSmoothing: 6
   avoidanceEnabled: 1
   obstacleMask:
     serializedVersion: 2
     m_Bits: 55
-  probeRadius: 3
-  minLookahead: 25
-  lookaheadTime: 1.5
-  avoidTurnRate: 120
-  inputSuppression: 0.8
+  frontDistance: 15
+  sideDistance: 10
+  sideAngle: 45
+  maxAvoidAngle: 70
+  maxTotalAvoidTurn: 90
+  frontHitAlwaysTurnsLeft: 1
+  avoidTurnRate: 150
+  inputSuppression: 0.675
   floorSoftDistance: 25
   floorEscapeY: 0.3
   useVirtualCeiling: 1
@@ -56108,6 +56121,7 @@ MonoBehaviour:
   flyingPitchThreshold: 2
   debugDragon: {fileID: 1054827964}
   drawGizmos: 1
+  debugLogState: 0
 --- !u!4 &5843683911810709526 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6023697553181998004, guid: 18267e2d46e1c54aaaec2f53d93afb06, type: 3}
